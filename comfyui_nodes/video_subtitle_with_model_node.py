@@ -168,7 +168,10 @@ class VideoSubtitleWithModelNode:
             # 设置日志记录
             # 生成文件名
             video_name = os.path.splitext(os.path.basename(video_path))[0]
-            audio_path = os.path.join(output_dir, f"{video_name}.wav")
+            # 使用时间戳避免并发冲突
+            import time
+            timestamp = int(time.time() * 1000)
+            audio_path = os.path.join(output_dir, f"{video_name}_temp_{timestamp}.wav")
             srt_path = os.path.join(output_dir, f"{video_name}.srt")
             output_video_path = os.path.join(output_dir, f"{video_name}_with_subtitles.mp4")
             

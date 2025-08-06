@@ -70,7 +70,10 @@ class SubtitleGenerator:
             
             # 生成文件名
             video_name = Path(video_path).stem
-            audio_path = os.path.join(output_dir, f"{video_name}.wav")
+            # 使用时间戳或随机数避免冲突
+            import time
+            timestamp = int(time.time() * 1000)
+            audio_path = os.path.join(output_dir, f"{video_name}_temp_{timestamp}.wav")
             srt_path = os.path.join(output_dir, f"{video_name}.srt")
             output_video_path = os.path.join(output_dir, f"{video_name}_with_subtitles.mp4")
             
