@@ -67,9 +67,11 @@ class VideoSubtitleNode:
                 }),
                 "subtitle_style": ([
                     "default", "cinema", "youtube", "minimal", 
-                    "top_news", "strong_shadow", "dramatic_shadow"
+                    "top_news", "strong_shadow", "dramatic_shadow",
+                    "background_black", "background_blur", "colorful_background",
+                    "elegant", "gaming"
                 ], {
-                    "default": "default"
+                    "default": "background_black"
                 })
             },
             "optional": {
@@ -81,7 +83,10 @@ class VideoSubtitleNode:
                 }),
                 "custom_position": ([
                     "none", "bottom_center", "bottom_left", "bottom_right",
-                    "top_center", "top_left", "top_right", "center"
+                    "bottom_10", "bottom_20", "bottom_30",
+                    "top_center", "top_left", "top_right", 
+                    "top_10", "top_20",
+                    "center", "center_30", "center_70"
                 ], {
                     "default": "none"
                 }),

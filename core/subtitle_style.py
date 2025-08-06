@@ -13,10 +13,17 @@ class SubtitlePosition(Enum):
     BOTTOM_CENTER = "bottom_center"      # 底部居中（默认）
     BOTTOM_LEFT = "bottom_left"          # 底部左对齐
     BOTTOM_RIGHT = "bottom_right"        # 底部右对齐
+    BOTTOM_10 = "bottom_10"              # 底部10%位置
+    BOTTOM_20 = "bottom_20"              # 底部20%位置
+    BOTTOM_30 = "bottom_30"              # 底部30%位置
     TOP_CENTER = "top_center"            # 顶部居中
     TOP_LEFT = "top_left"                # 顶部左对齐
     TOP_RIGHT = "top_right"              # 顶部右对齐
+    TOP_10 = "top_10"                    # 顶部10%位置
+    TOP_20 = "top_20"                    # 顶部20%位置
     CENTER = "center"                    # 屏幕中央
+    CENTER_70 = "center_70"              # 中下70%位置
+    CENTER_30 = "center_30"              # 中上30%位置
     CUSTOM = "custom"                    # 自定义位置
 
 
@@ -58,6 +65,10 @@ class SubtitleStyle:
     background_enabled: bool = False     # 是否启用背景
     background_color: Tuple[int, int, int, int] = (0, 0, 0, 128)  # 背景颜色（RGBA，半透明黑色）
     background_padding: int = 10         # 背景内边距
+    background_margin_h: int = 0         # 背景水平边距
+    background_margin_v: int = 0         # 背景垂直边距
+    background_radius: int = 0           # 背景圆角半径（ASS不直接支持，但可以通过技巧实现）
+    background_full_width: bool = False  # 是否使用全宽背景
     
     # 其他配置
     line_spacing: float = 1.2            # 行间距倍数
@@ -83,6 +94,15 @@ class SubtitleStyle:
         elif self.position == SubtitlePosition.BOTTOM_RIGHT:
             x = f"w-text_w-{self.margin_x}"
             y = f"h-text_h-{self.margin_y}"
+        elif self.position == SubtitlePosition.BOTTOM_10:
+            x = f"(w-text_w)/2"
+            y = f"h*0.9-text_h"
+        elif self.position == SubtitlePosition.BOTTOM_20:
+            x = f"(w-text_w)/2"
+            y = f"h*0.8-text_h"
+        elif self.position == SubtitlePosition.BOTTOM_30:
+            x = f"(w-text_w)/2"
+            y = f"h*0.7-text_h"
         elif self.position == SubtitlePosition.TOP_CENTER:
             x = f"(w-text_w)/2"
             y = str(self.margin_y)
@@ -92,9 +112,21 @@ class SubtitleStyle:
         elif self.position == SubtitlePosition.TOP_RIGHT:
             x = f"w-text_w-{self.margin_x}"
             y = str(self.margin_y)
+        elif self.position == SubtitlePosition.TOP_10:
+            x = f"(w-text_w)/2"
+            y = f"h*0.1"
+        elif self.position == SubtitlePosition.TOP_20:
+            x = f"(w-text_w)/2"
+            y = f"h*0.2"
         elif self.position == SubtitlePosition.CENTER:
             x = f"(w-text_w)/2"
             y = f"(h-text_h)/2"
+        elif self.position == SubtitlePosition.CENTER_70:
+            x = f"(w-text_w)/2"
+            y = f"h*0.7-text_h"
+        elif self.position == SubtitlePosition.CENTER_30:
+            x = f"(w-text_w)/2"
+            y = f"h*0.3"
         elif self.position == SubtitlePosition.CUSTOM:
             x = str(self.custom_x or 0)
             y = str(self.custom_y or 0)
@@ -220,6 +252,35 @@ class SubtitleStyle:
         return style
 
 
+# 预设颜色定义
+class PresetColors:
+    """预设颜色系统"""
+    WHITE = (255, 255, 255)
+    BLACK = (0, 0, 0)
+    RED = (255, 0, 0)
+    GREEN = (0, 255, 0)
+    BLUE = (0, 0, 255)
+    YELLOW = (255, 255, 0)
+    CYAN = (0, 255, 255)
+    MAGENTA = (255, 0, 255)
+    ORANGE = (255, 165, 0)
+    PURPLE = (128, 0, 128)
+    PINK = (255, 192, 203)
+    GRAY = (128, 128, 128)
+    LIGHT_GRAY = (192, 192, 192)
+    DARK_GRAY = (64, 64, 64)
+    GOLD = (255, 215, 0)
+    SILVER = (192, 192, 192)
+    BROWN = (139, 69, 19)
+    LIGHT_BLUE = (173, 216, 230)
+    DARK_BLUE = (0, 0, 139)
+    LIGHT_GREEN = (144, 238, 144)
+    DARK_GREEN = (0, 100, 0)
+    BEIGE = (245, 245, 220)
+    CORAL = (255, 127, 80)
+    SKY_BLUE = (135, 206, 235)
+
+
 # 预定义样式
 class PresetStyles:
     """预定义字幕样式"""
@@ -314,4 +375,88 @@ class PresetStyles:
             outline_color=(0, 0, 0),
             # 白色字体
             font_color=(255, 255, 255)
+        )
+    
+    @staticmethod
+    def background_black() -> SubtitleStyle:
+        """黑色背景样式：类似原始节点的黑底白字效果"""
+        return SubtitleStyle(
+            position=SubtitlePosition.BOTTOM_10,
+            font_size=28,
+            font_weight=FontWeight.BOLD,
+            font_color=PresetColors.WHITE,
+            background_enabled=True,
+            background_color=(0, 0, 0, 200),  # 半透明黑色背景
+            background_padding=15,
+            outline_width=0,  # 有背景时不需要描边
+            shadow_enabled=False,  # 有背景时不需要阴影
+            margin_y=50
+        )
+    
+    @staticmethod
+    def background_blur() -> SubtitleStyle:
+        """模糊背景样式：带半透明模糊背景的字幕"""
+        return SubtitleStyle(
+            position=SubtitlePosition.BOTTOM_CENTER,
+            font_size=26,
+            font_color=PresetColors.WHITE,
+            background_enabled=True,
+            background_color=(20, 20, 20, 180),  # 深灰半透明背景
+            background_padding=20,
+            background_margin_h=10,
+            outline_width=1,
+            outline_color=PresetColors.DARK_GRAY,
+            shadow_enabled=False
+        )
+    
+    @staticmethod
+    def colorful_background() -> SubtitleStyle:
+        """彩色背景样式：适合综艺节目"""
+        return SubtitleStyle(
+            position=SubtitlePosition.BOTTOM_20,
+            font_size=32,
+            font_weight=FontWeight.BOLD,
+            font_color=PresetColors.WHITE,
+            background_enabled=True,
+            background_color=(255, 69, 0, 200),  # 橙红色背景
+            background_padding=18,
+            outline_width=2,
+            outline_color=PresetColors.DARK_GRAY,
+            shadow_enabled=True,
+            shadow_offset_x=3,
+            shadow_offset_y=3
+        )
+    
+    @staticmethod
+    def elegant() -> SubtitleStyle:
+        """优雅样式：适合纪录片或正式内容"""
+        return SubtitleStyle(
+            position=SubtitlePosition.BOTTOM_CENTER,
+            font_size=24,
+            font_weight=FontWeight.NORMAL,
+            font_color=PresetColors.BEIGE,
+            outline_width=1,
+            outline_color=PresetColors.DARK_GRAY,
+            shadow_enabled=True,
+            shadow_color=PresetColors.BLACK,
+            shadow_offset_x=2,
+            shadow_offset_y=2,
+            margin_y=45
+        )
+    
+    @staticmethod
+    def gaming() -> SubtitleStyle:
+        """游戏风格：醒目的游戏字幕效果"""
+        return SubtitleStyle(
+            position=SubtitlePosition.BOTTOM_10,
+            font_size=30,
+            font_weight=FontWeight.BOLD,
+            font_color=PresetColors.YELLOW,
+            outline_width=3,
+            outline_color=PresetColors.BLACK,
+            shadow_enabled=True,
+            shadow_color=PresetColors.DARK_GRAY,
+            shadow_offset_x=4,
+            shadow_offset_y=4,
+            shadow_blur=5
         )

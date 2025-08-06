@@ -157,6 +157,19 @@ class VideoService:
         style_configs.append(f"MarginR={style.margin_x}")
         style_configs.append(f"MarginV={style.margin_y}")
         
+        # 背景效果设置
+        if style.background_enabled:
+            # BorderStyle: 1=轮廓+阴影, 3=不透明背景框, 4=半透明背景框
+            if style.background_color[3] < 255:  # 如果有透明度
+                style_configs.append("BorderStyle=4")
+            else:
+                style_configs.append("BorderStyle=3")
+            # 设置背景透明度
+            alpha = 255 - style.background_color[3]  # ASS中透明度是反向的
+            style_configs.append(f"BackColour=&H{alpha:02x}{style.background_color[2]:02x}{style.background_color[1]:02x}{style.background_color[0]:02x}")
+        else:
+            style_configs.append("BorderStyle=1")  # 默认轮廓+阴影
+        
         # 组合所有样式配置
         force_style = ",".join(style_configs)
         
@@ -181,10 +194,17 @@ class VideoService:
             'bottom_left': 1,
             'bottom_center': 2,
             'bottom_right': 3,
+            'bottom_10': 2,  # 底部居中
+            'bottom_20': 2,  # 底部居中
+            'bottom_30': 2,  # 底部居中
             'center': 5,
+            'center_70': 5,  # 中心对齐
+            'center_30': 5,  # 中心对齐
             'top_left': 7,
             'top_center': 8,
             'top_right': 9,
+            'top_10': 8,  # 顶部居中
+            'top_20': 8,  # 顶部居中
             'custom': 2  # 默认底部居中
         }
         return alignment_map.get(position.value, 2)
@@ -211,7 +231,12 @@ class VideoService:
             "minimal": PresetStyles.minimal,
             "top_news": PresetStyles.top_news,
             "strong_shadow": PresetStyles.strong_shadow,
-            "dramatic_shadow": PresetStyles.dramatic_shadow
+            "dramatic_shadow": PresetStyles.dramatic_shadow,
+            "background_black": PresetStyles.background_black,
+            "background_blur": PresetStyles.background_blur,
+            "colorful_background": PresetStyles.colorful_background,
+            "elegant": PresetStyles.elegant,
+            "gaming": PresetStyles.gaming
         }
         
         if preset_name not in style_map:
