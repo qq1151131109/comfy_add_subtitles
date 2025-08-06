@@ -1,0 +1,18 @@
+# 视频实时字幕添加工具依赖
+
+# 语音识别
+faster-whisper>=0.10.0
+
+# 系统工具 (ffmpeg需要单独安装)
+# 在Ubuntu/Debian上: sudo apt install ffmpeg
+# 在CentOS/RHEL上: sudo yum install ffmpeg
+# 在macOS上: brew install ffmpeg
+# 在Windows上: 下载ffmpeg并添加到PATH
+
+# 可选: GPU加速支持
+# torch>=2.0.0+cu118  # CUDA 11.8版本
+# torchaudio>=2.0.0+cu118
+
+# 开发和测试依赖
+# pytest>=7.0.0
+# pytest-cov>=4.0.0
