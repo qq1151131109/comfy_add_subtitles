@@ -7,6 +7,7 @@ import os
 import sys
 import tempfile
 import logging
+import time
 from typing import Dict, Any, Tuple
 
 # 导入ComfyUI folder_paths模块以获取输出目录
@@ -170,11 +171,14 @@ class VideoSubtitleWithModelNode:
             os.makedirs(output_dir, exist_ok=True)
             
             # 设置日志记录
-            # 生成文件名
+            # 生成唯一文件名（使用时间戳避免冲突）
             video_name = os.path.splitext(os.path.basename(video_path))[0]
-            audio_path = os.path.join(output_dir, f"{video_name}.wav")
-            srt_path = os.path.join(output_dir, f"{video_name}.srt")
-            output_video_path = os.path.join(output_dir, f"{video_name}_with_subtitles.mp4")
+            timestamp = int(time.time())
+            unique_suffix = f"_{timestamp}"
+            
+            audio_path = os.path.join(output_dir, f"{video_name}{unique_suffix}.wav")
+            srt_path = os.path.join(output_dir, f"{video_name}{unique_suffix}.srt")
+            output_video_path = os.path.join(output_dir, f"{video_name}{unique_suffix}_with_subtitles.mp4")
             
             # 步骤1: 从视频中提取音频
             print("🎵 步骤1: 提取音频...")
