@@ -32,13 +32,13 @@ class SubtitleStyle:
     
     # 位置配置
     position: SubtitlePosition = SubtitlePosition.BOTTOM_CENTER
-    margin_x: int = 50                   # 左右边距（像素）
-    margin_y: int = 50                   # 上下边距（像素）
+    margin_x: int = 120                  # 左右边距（像素）
+    margin_y: int = 50                   # 上下边距（像素）- 减小数值让字幕更靠近底部
     custom_x: Optional[int] = None       # 自定义X坐标（仅当position为CUSTOM时使用）
     custom_y: Optional[int] = None       # 自定义Y坐标（仅当position为CUSTOM时使用）
     
     # 字体配置
-    font_family: str = "Arial"           # 字体名称
+    font_family: str = "Noto Sans CJK SC,WenQuanYi Zen Hei,Arial"  # 字体名称（支持中文）
     font_size: int = 24                  # 字体大小
     font_weight: FontWeight = FontWeight.BOLD  # 字体粗细
     
@@ -234,13 +234,15 @@ class PresetStyles:
         """电影院样式：底部居中，大字体，强阴影"""
         return SubtitleStyle(
             font_size=28,
-            margin_y=60,
+            margin_x=100,
+            margin_y=40,  # 减小数值让字幕更靠近底部
             shadow_enabled=True,
             shadow_offset_x=4,
             shadow_offset_y=4,
             shadow_blur=6,
             outline_width=2,
-            font_weight=FontWeight.BOLD
+            font_weight=FontWeight.BOLD,
+            max_width_percent=75  # 限制最大宽度
         )
     
     @staticmethod
@@ -282,7 +284,8 @@ class PresetStyles:
         return SubtitleStyle(
             font_size=32,
             font_weight=FontWeight.BOLD,
-            margin_y=50,
+            margin_x=120,
+            margin_y=30,  # 减小数值让字幕更靠近底部
             # 强阴影配置
             shadow_enabled=True,
             shadow_color=(0, 0, 0),  # 纯黑色阴影
@@ -293,7 +296,8 @@ class PresetStyles:
             outline_width=3,
             outline_color=(0, 0, 0), # 黑色描边
             # 字体颜色保持白色以形成对比
-            font_color=(255, 255, 255)
+            font_color=(255, 255, 255),
+            max_width_percent=70     # 限制最大宽度
         )
     
     @staticmethod

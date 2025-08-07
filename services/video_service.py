@@ -26,7 +26,68 @@ class VideoService:
     """视频处理服务类"""
     
     def __init__(self):
-        pass
+        self._cached_fonts = None
+    
+    def _get_available_fonts(self) -> list:
+        """
+        获取系统可用字体列表
+        
+        Returns:
+            可用字体名称列表
+        """
+        if self._cached_fonts is not None:
+            return self._cached_fonts
+        
+        try:
+            import subprocess
+            result = subprocess.run(['fc-list', ':'], capture_output=True, text=True, encoding='utf-8', errors='ignore')
+            if result.returncode == 0:
+                fonts = []
+                for line in result.stdout.split('\n'):
+                    if ':' in line:
+                        font_info = line.split(':')[1].strip()
+                        if font_info:
+                            fonts.append(font_info)
+                self._cached_fonts = fonts
+                return fonts
+        except Exception as e:
+            logger.warning(f"获取字体列表失败: {e}")
+        
+        # 回退到常用字体
+        self._cached_fonts = ['Arial', 'DejaVu Sans', 'Liberation Sans']
+        return self._cached_fonts
+    
+    def _find_best_font(self, preferred_fonts: str) -> str:
+        """
+        从首选字体列表中找到最合适的字体
+        
+        Args:
+            preferred_fonts: 逗号分隔的首选字体列表
+            
+        Returns:
+            最合适的字体名称
+        """
+        available_fonts = self._get_available_fonts()
+        font_list = [f.strip() for f in preferred_fonts.split(',')]
+        
+        # 尝试找到匹配的字体
+        for font in font_list:
+            for available in available_fonts:
+                if font.lower() in available.lower():
+                    logger.info(f"使用字体: {available}")
+                    return available
+        
+        # 如果都没找到，使用中文字体回退策略
+        chinese_fonts = ['Noto Sans CJK SC', 'WenQuanYi Zen Hei', 'WenQuanYi Micro Hei']
+        for font in chinese_fonts:
+            for available in available_fonts:
+                if font.lower() in available.lower():
+                    logger.info(f"使用中文回退字体: {available}")
+                    return available
+        
+        # 最后回退到默认字体
+        logger.warning("未找到合适的中文字体，使用默认字体")
+        return 'Arial'
     
     def embed_subtitles(self, video_path: str, srt_path: str, output_path: str, 
                        style: Optional[SubtitleStyle] = None) -> bool:
@@ -68,25 +129,44 @@ class VideoService:
             # 构建字幕过滤器
             subtitle_filter = self._build_subtitle_filter(srt_path, style, video_width, video_height)
             
-            # 使用ffmpeg将字幕嵌入视频
+            # 使用ffmpeg将字幕嵌入视频 - 添加字符编码支持
             cmd = [
                 'ffmpeg', '-i', video_path,
                 '-vf', subtitle_filter,
                 '-c:a', 'copy',  # 复制音频流，不重新编码
+                '-c:v', 'libx264',  # 指定视频编码器
+                '-preset', 'medium',  # 编码速度预设
                 output_path,
                 '-y'  # 覆盖输出文件
             ]
             
             logger.info(f"开始嵌入字幕: {video_path} + {srt_path} -> {output_path}")
             logger.info(f"字幕样式: {style.position.value}, 字体大小: {style.font_size}")
+            logger.info(f"执行命令: {' '.join(cmd)}")
             
-            result = subprocess.run(cmd, capture_output=True, text=True)
+            # 添加超时机制，避免进程卡死
+            try:
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)  # 5分钟超时
+            except subprocess.TimeoutExpired:
+                logger.error("FFmpeg 处理超时（5分钟），可能是字幕文件或参数有问题")
+                return False
             
             if result.returncode == 0:
-                logger.info(f"字幕嵌入完成: {output_path}")
-                return True
+                # 验证输出文件是否真正创建
+                if os.path.exists(output_path):
+                    file_size = os.path.getsize(output_path)
+                    logger.info(f"字幕嵌入完成: {output_path} ({file_size} 字节)")
+                    return True
+                else:
+                    logger.error(f"字幕嵌入失败: 输出文件未创建 {output_path}")
+                    logger.error(f"FFmpeg stderr: {result.stderr}")
+                    logger.error(f"FFmpeg stdout: {result.stdout}")
+                    return False
             else:
-                logger.error(f"字幕嵌入失败: {result.stderr}")
+                logger.error(f"字幕嵌入失败 (退出码: {result.returncode})")
+                logger.error(f"FFmpeg stderr: {result.stderr}")
+                logger.error(f"FFmpeg stdout: {result.stdout}")
+                logger.error(f"执行的命令: {' '.join(cmd)}")
                 return False
                 
         except FileNotFoundError:
@@ -110,17 +190,18 @@ class VideoService:
         Returns:
             FFmpeg过滤器字符串
         """
-        # 转义文件路径中的特殊字符
-        escaped_path = srt_path.replace('\\', '\\\\').replace(':', '\\:').replace("'", "\\'")
+        # 转义文件路径中的特殊字符 - 针对中文字符进行优化
+        escaped_path = srt_path.replace('\\', '/').replace(':', '\\:').replace("'", "\\'")
         
-        # 构建字幕样式配置
+        # 使用简化但可控的字幕样式配置
         style_configs = []
         
         # 字体配置
-        style_configs.append(f"FontName={style.font_family}")
+        best_font = self._find_best_font(style.font_family)
+        style_configs.append(f"FontName={best_font}")
         style_configs.append(f"FontSize={style.font_size}")
         
-        # 字体颜色 (ASS格式使用BGR顺序，前缀&H)
+        # 字体颜色
         font_color = f"&H{style.font_color[2]:02x}{style.font_color[1]:02x}{style.font_color[0]:02x}"
         style_configs.append(f"PrimaryColour={font_color}")
         
@@ -132,12 +213,11 @@ class VideoService:
         else:
             style_configs.append("Outline=0")
         
-        # 阴影配置 - 这是关键部分
+        # 阴影配置 - 根据参数控制
         if style.shadow_enabled:
-            shadow_color = f"&H{style.shadow_color[2]:02x}{style.shadow_color[1]:02x}{style.shadow_color[0]:02x}"
-            style_configs.append(f"BackColour={shadow_color}")
-            # 阴影深度，数值越大阴影越明显
             shadow_depth = max(abs(style.shadow_offset_x), abs(style.shadow_offset_y))
+            if shadow_depth == 0:
+                shadow_depth = 2  # 默认阴影深度
             style_configs.append(f"Shadow={shadow_depth}")
         else:
             style_configs.append("Shadow=0")
@@ -152,15 +232,24 @@ class VideoService:
         alignment = self._get_alignment_from_position(style.position)
         style_configs.append(f"Alignment={alignment}")
         
-        # 边距设置
-        style_configs.append(f"MarginL={style.margin_x}")
-        style_configs.append(f"MarginR={style.margin_x}")
-        style_configs.append(f"MarginV={style.margin_y}")
+        # 边距配置 - 根据位置调整
+        if style.position.value in ['bottom_center', 'bottom_left', 'bottom_right']:
+            style_configs.append(f"MarginV={style.margin_y}")
+        elif style.position.value in ['top_center', 'top_left', 'top_right']:
+            style_configs.append(f"MarginV={style.margin_y}")
+        else:  # center
+            style_configs.append(f"MarginV=0")
         
-        # 组合所有样式配置
+        # 左右边距（简化版本，只在需要时添加）
+        if style.position.value in ['bottom_left', 'top_left']:
+            style_configs.append(f"MarginL={style.margin_x}")
+        elif style.position.value in ['bottom_right', 'top_right']:
+            style_configs.append(f"MarginR={style.margin_x}")
+        
+        # 组合样式配置
         force_style = ",".join(style_configs)
         
-        # 构建完整的字幕过滤器
+        # 构建字幕过滤器
         return f"subtitles='{escaped_path}':force_style='{force_style}'"
     
     def _get_alignment_from_position(self, position: 'SubtitlePosition') -> int:

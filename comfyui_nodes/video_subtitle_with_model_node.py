@@ -9,6 +9,13 @@ import tempfile
 import logging
 from typing import Dict, Any, Tuple
 
+# 导入ComfyUI folder_paths模块以获取输出目录
+try:
+    import folder_paths
+except ImportError:
+    # 如果在ComfyUI环境外运行，使用相对路径
+    folder_paths = None
+
 # 添加父目录到Python路径以支持导入
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
@@ -57,10 +64,10 @@ class VideoSubtitleWithModelNode:
                     "multiline": False,
                     "placeholder": "输入视频文件路径"
                 }),
-                "output_dir": ("STRING", {
-                    "default": "./output",
+                "output_prefix": ("STRING", {
+                    "default": "subtitle_output",
                     "multiline": False,
-                    "placeholder": "输出目录路径"
+                    "placeholder": "输出目录前缀（将拼接到ComfyUI输出目录后）"
                 }),
                 "subtitle_style": ([
                     "default", "cinema", "youtube", "minimal", 
@@ -126,14 +133,14 @@ class VideoSubtitleWithModelNode:
     OUTPUT_NODE = True
     
     def process_video(self, whisper_model: WhisperService, video_path: str, 
-                     output_dir: str, subtitle_style: str, **kwargs) -> Tuple[str, str, str, str]:
+                     output_prefix: str, subtitle_style: str, **kwargs) -> Tuple[str, str, str, str]:
         """
         处理视频添加字幕（使用预加载模型）
         
         Args:
             whisper_model: 预加载的Whisper模型服务
             video_path: 输入视频路径
-            output_dir: 输出目录
+            output_prefix: 输出目录前缀(拼接到ComfyUI输出目录后)
             subtitle_style: 字幕样式
             **kwargs: 可选参数
             
@@ -143,13 +150,21 @@ class VideoSubtitleWithModelNode:
         try:
             # 验证模型
             if whisper_model is None:
-                error_msg = "❌ Whisper模型未加载或加载失败，请先使用Whisper模型加载节点"
+                error_msg = "❌ Whisper模型未加载或加载失败,请先使用Whisper模型加载节点"
                 return "", "", "", error_msg
             
             # 验证输入文件
             if not os.path.exists(video_path):
                 error_msg = f"❌ 视频文件不存在: {video_path}"
                 return "", "", "", error_msg
+            
+            # 获取ComfyUI输出目录并拼接前缀
+            if folder_paths is not None:
+                comfy_output_dir = folder_paths.get_output_directory()
+                output_dir = os.path.join(comfy_output_dir, output_prefix)
+            else:
+                # 如果不在ComfyUI环境中，使用默认输出目录
+                output_dir = os.path.join("./output", output_prefix)
             
             # 创建输出目录
             os.makedirs(output_dir, exist_ok=True)
@@ -367,7 +382,7 @@ if __name__ == "__main__":
         output_video, subtitle_file, transcription, log = subtitle_node.process_video(
             whisper_model=whisper_service,
             video_path="test.mp4",
-            output_dir="./test_with_model_output",
+            output_prefix="test_with_model_output",
             subtitle_style="strong_shadow"
         )
         

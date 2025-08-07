@@ -124,15 +124,29 @@ class SubtitleGenerator:
             
             # 步骤4: 将字幕嵌入视频
             logger.info("步骤4: 嵌入字幕...")
+            logger.info(f"输入视频: {video_path}")
+            logger.info(f"字幕文件: {srt_path}")
+            logger.info(f"输出视频: {output_video_path}")
+            
+            # 确保输出目录有写入权限
+            try:
+                with open(output_video_path + ".test", 'w') as f:
+                    f.write("test")
+                os.remove(output_video_path + ".test")
+            except Exception as e:
+                logger.error(f"输出目录无写入权限: {e}")
+                return False
             
             # 确定使用的字幕样式
             if preset_style:
                 # 使用预设样式
+                logger.info(f"使用预设样式: {preset_style}")
                 if not self.video_service.embed_subtitles_with_preset(video_path, srt_path, output_video_path, preset_style):
                     logger.error("字幕嵌入失败")
                     return False
             else:
                 # 使用自定义样式或默认样式
+                logger.info("使用默认样式")
                 if not self.video_service.embed_subtitles(video_path, srt_path, output_video_path, subtitle_style):
                     logger.error("字幕嵌入失败")
                     return False
