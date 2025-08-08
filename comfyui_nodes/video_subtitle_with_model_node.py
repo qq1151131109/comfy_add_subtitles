@@ -152,12 +152,18 @@ class VideoSubtitleWithModelNode:
             # 验证模型
             if whisper_model is None:
                 error_msg = "❌ Whisper模型未加载或加载失败,请先使用Whisper模型加载节点"
-                return "", "", "", error_msg
+                return {
+                    "ui": {},
+                    "result": ("", "", "", error_msg)
+                }
             
             # 验证输入文件
             if not os.path.exists(video_path):
                 error_msg = f"❌ 视频文件不存在: {video_path}"
-                return "", "", "", error_msg
+                return {
+                    "ui": {},
+                    "result": ("", "", "", error_msg)
+                }
             
             # 获取ComfyUI输出目录并拼接前缀
             if folder_paths is not None:
@@ -184,12 +190,18 @@ class VideoSubtitleWithModelNode:
             print("🎵 步骤1: 提取音频...")
             if not self.audio_service.extract_audio_from_video(video_path, audio_path):
                 error_msg = "❌ 音频提取失败"
-                return "", "", "", error_msg
+                return {
+                    "ui": {},
+                    "result": ("", "", "", error_msg)
+                }
             
             # 验证音频文件
             if not self.audio_service.validate_audio_file(audio_path):
                 error_msg = "❌ 音频文件验证失败"
-                return "", "", "", error_msg
+                return {
+                    "ui": {},
+                    "result": ("", "", "", error_msg)
+                }
             
             # 步骤2: 使用预加载的Whisper模型进行语音识别
             print("🎙️ 步骤2: 语音识别...")
@@ -217,14 +229,23 @@ class VideoSubtitleWithModelNode:
                     
                 except Exception as e:
                     error_msg = f"❌ 模型转录失败: {str(e)}"
-                    return "", "", "", error_msg
+                    return {
+                        "ui": {},
+                        "result": ("", "", "", error_msg)
+                    }
             else:
                 error_msg = "❌ 模型未正确加载"
-                return "", "", "", error_msg
+                return {
+                    "ui": {},
+                    "result": ("", "", "", error_msg)
+                }
             
             if not whisper_result:
                 error_msg = "❌ 语音识别失败"
-                return "", "", "", error_msg
+                return {
+                    "ui": {},
+                    "result": ("", "", "", error_msg)
+                }
             
             # 输出识别信息
             language = whisper_result.get('language', 'unknown')
@@ -239,12 +260,18 @@ class VideoSubtitleWithModelNode:
             print("📄 步骤3: 生成字幕文件...")
             if not self.subtitle_service.generate_srt_from_whisper_result(whisper_result, srt_path):
                 error_msg = "❌ 字幕文件生成失败"
-                return "", "", "", error_msg
+                return {
+                    "ui": {},
+                    "result": ("", "", "", error_msg)
+                }
             
             # 验证字幕文件
             if not self.subtitle_service.validate_srt_file(srt_path):
                 error_msg = "❌ 字幕文件验证失败"
-                return "", "", "", error_msg
+                return {
+                    "ui": {},
+                    "result": ("", "", "", error_msg)
+                }
             
             # 输出字幕信息
             subtitle_info = self.subtitle_service.get_subtitle_info(srt_path)
@@ -263,12 +290,18 @@ class VideoSubtitleWithModelNode:
                 # 使用自定义样式
                 if not self.video_service.embed_subtitles(video_path, srt_path, output_video_path, custom_style):
                     error_msg = "❌ 字幕嵌入失败"
-                    return "", "", "", error_msg
+                    return {
+                        "ui": {},
+                        "result": ("", "", "", error_msg)
+                    }
             else:
                 # 使用预设样式
                 if not self.video_service.embed_subtitles_with_preset(video_path, srt_path, output_video_path, subtitle_style):
                     error_msg = "❌ 字幕嵌入失败"
-                    return "", "", "", error_msg
+                    return {
+                        "ui": {},
+                        "result": ("", "", "", error_msg)
+                    }
             
             # 获取输出视频信息
             video_info = self.video_service.get_video_info_local(output_video_path)
@@ -289,11 +322,18 @@ class VideoSubtitleWithModelNode:
             except:
                 pass
             
-            return output_video_path, srt_path, full_text, ""
+            # 简单套上UI格式
+            return {
+                "ui": {},
+                "result": (output_video_path, srt_path, full_text, "")
+            }
             
         except Exception as e:
             error_msg = f"❌ 处理过程中发生错误: {str(e)}"
-            return "", "", "", error_msg
+            return {
+                "ui": {},
+                "result": ("", "", "", error_msg)
+            }
     
     def _create_custom_style(self, base_style_name: str, **kwargs):
         """
