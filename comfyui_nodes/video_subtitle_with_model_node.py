@@ -34,7 +34,19 @@ except ImportError:
         from subtitle_service import SubtitleService
         from video_service import VideoService
         from whisper_service import WhisperService
-        from subtitle_style import SubtitlePosition, PresetStyles
+
+
+def flush_line(line_text, line_start, end_time, transcript_lines):
+    """将当前累计的行写入 transcript_lines，并重置行状态。
+
+    返回重置后的 (line_text, line_start)。
+    """
+    text_out = (line_text or "").strip()
+    if text_out and line_start is not None:
+        transcript_lines.append(
+            f"[{line_start:.2f}s -> {end_time:.2f}s] {text_out}"
+        )
+    return "", None
 
 
 class VideoSubtitleWithModelNode:
@@ -63,6 +75,13 @@ class VideoSubtitleWithModelNode:
                     "multiline": False,
                     "placeholder": "输出目录前缀（将拼接到ComfyUI输出目录后）"
                 }),
+                "output_mode": ([
+                    "line",
+                    "word",
+                ], {
+                    "default": "line",
+                    "tooltip": "字幕输出粒度：line=按标点换行的句子；word=按词"
+                }),
                 "subtitle_style": ([
                     "default", "cinema", "youtube", "minimal", 
                     "top_news", "strong_shadow", "dramatic_shadow"
@@ -78,6 +97,13 @@ class VideoSubtitleWithModelNode:
                     "max": 72,
                     "step": 1,
                     "tooltip": "自定义字体大小"
+                }),
+                "max_chars_per_line": ("INT", {
+                    "default": 30,
+                    "min": 10,
+                    "max": 120,
+                    "step": 1,
+                    "tooltip": "行模式：单条字幕最大字符数，达到后提前换行"
                 }),
                 "custom_position": ([
                     "none", "bottom_center", "bottom_left", "bottom_right",
@@ -236,30 +262,118 @@ class VideoSubtitleWithModelNode:
                     "result": ("", "", "", error_msg)
                 }
             
-            # 步骤2: 使用预加载的Whisper模型进行语音识别
+            # 步骤2: 使用预加载的Whisper模型进行语音识别（支持词级或行级输出）
             print("🎙️ 步骤2: 语音识别...")
-            
+
             # 使用预加载模型直接转录
             if hasattr(whisper_model, '_model') and whisper_model._model is not None:
                 try:
-                    segments, info = whisper_model._model.transcribe(audio_path, beam_size=5)
-                    
-                    # 收集所有文案
+                    # 启用词级时间戳，便于两种模式的时间计算
+                    segments, info = whisper_model._model.transcribe(
+                        audio_path,
+                        beam_size=5,
+                        word_timestamps=True
+                    )
+
+                    # 根据输出模式组装字幕条目
+                    output_mode = kwargs.get("output_mode", "line")
+                    max_chars_per_line = kwargs.get("max_chars_per_line", 30)
                     transcript_lines = []
                     full_text = ""
-                    
-                    for segment in segments:
-                        timestamp_line = f"[{segment.start:.2f}s -> {segment.end:.2f}s] {segment.text}"
-                        transcript_lines.append(timestamp_line)
-                        full_text += segment.text + " "
-                    
+
+                    # 简易的中英文标点集合
+                    punctuation_chars = set(
+                        list(",.!?;:") + list("，。！？；：、")
+                    )
+
+                    def needs_space(prev_char: str, next_char: str) -> bool:
+                        import re
+                        return bool(re.match(r"[A-Za-z0-9]", prev_char or "")) and bool(re.match(r"[A-Za-z0-9]", next_char or ""))
+
+                    if output_mode == "word":
+                        # 每个词一条
+                        for segment in segments:
+                            if hasattr(segment, 'words') and segment.words:
+                                for w in segment.words:
+                                    word_text = (w.word or "").strip()
+                                    if not word_text:
+                                        continue
+                                    transcript_lines.append(
+                                        f"[{getattr(w, 'start', segment.start):.2f}s -> {getattr(w, 'end', segment.end):.2f}s] {word_text}"
+                                    )
+                                    full_text += word_text + " "
+                            else:
+                                transcript_lines.append(
+                                    f"[{segment.start:.2f}s -> {segment.end:.2f}s] {segment.text}"
+                                )
+                                full_text += (segment.text or "") + " "
+                    else:
+                        # line: 按标点换行，将词合并为句子
+                        for segment in segments:
+                            if hasattr(segment, 'words') and segment.words:
+                                line_start = None
+                                line_text = ""
+                                last_char = ""
+                                last_word_end = None
+
+                                for w in segment.words:
+                                    word_text_raw = (w.word or "")
+                                    word_text = word_text_raw.strip()
+                                    if not word_text:
+                                        continue
+
+                                    if line_start is None:
+                                        line_start = getattr(w, 'start', segment.start)
+
+                                    # 拼接时中英文间自动加空格（仅英文字母/数字之间）
+                                    pending = word_text
+                                    add_space = line_text and needs_space(last_char[-1:] if last_char else "", word_text[:1] if word_text else "")
+                                    candidate_text = (line_text + (" " if add_space else "") + pending) if line_text else pending
+
+                                    # 字符长度限制：超过则以上一词结束时间断开
+                                    if line_text and len(candidate_text) > max_chars_per_line and last_word_end is not None:
+                                        line_text, line_start = flush_line(line_text, line_start, last_word_end, transcript_lines)
+                                        # 断行后重新开始本词
+                                        line_start = getattr(w, 'start', segment.start)
+                                        line_text = pending
+                                    else:
+                                        # 接受追加
+                                        if add_space:
+                                            line_text += " "
+                                        line_text += pending
+                                    last_char = pending
+
+                                    # 碰到标点则换行
+                                    ending_char = word_text[-1]
+                                    if ending_char in punctuation_chars:
+                                        end_time = getattr(w, 'end', segment.end)
+                                        line_text, line_start = flush_line(line_text, line_start, end_time, transcript_lines)
+                                        last_word_end = end_time
+                                        continue
+
+                                    # 记录当前词结束时间，用于后续长度断行或收尾
+                                    last_word_end = getattr(w, 'end', segment.end)
+
+                                # 处理残留行
+                                if line_text and line_start is not None:
+                                    end_time = last_word_end if last_word_end is not None else getattr(segment.words[-1], 'end', segment.end)
+                                    line_text, line_start = flush_line(line_text, line_start, end_time, transcript_lines)
+                            else:
+                                # 无词级别信息时，整段作为一行
+                                transcript_lines.append(
+                                    f"[{segment.start:.2f}s -> {segment.end:.2f}s] {segment.text}"
+                                )
+                                
+                            # 汇总全文
+                            full_text += (segment.text or "") + " "
+
                     whisper_result = {
                         'language': info.language,
                         'language_probability': info.language_probability,
                         'segments': transcript_lines,
                         'full_text': full_text.strip()
                     }
-                    
+
                 except Exception as e:
                     error_msg = f"❌ 模型转录失败: {str(e)}"
                     return {
