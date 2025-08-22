@@ -305,16 +305,79 @@ class TextOverlayService:
         Returns:
             字体文件路径
         """
-        # 常见系统字体路径
+        # 常见系统字体路径映射
         font_paths = {
-            "Arial": "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
-            "Times": "/usr/share/fonts/truetype/liberation/LiberationSerif-Regular.ttf",
-            "Courier": "/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf",
+            # Sans-serif fonts
+            "Arial": [
+                "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+                "/System/Library/Fonts/Arial.ttf",  # macOS
+                "/Windows/Fonts/arial.ttf"  # Windows
+            ],
+            "Helvetica": [
+                "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+                "/System/Library/Fonts/Helvetica.ttc",  # macOS
+                "/Windows/Fonts/arial.ttf"  # Windows fallback
+            ],
+            "Verdana": [
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+                "/System/Library/Fonts/Verdana.ttf",  # macOS
+                "/Windows/Fonts/verdana.ttf",  # Windows
+                "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"
+            ],
+            "Trebuchet MS": [
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+                "/System/Library/Fonts/Trebuchet MS.ttf",  # macOS
+                "/Windows/Fonts/trebuc.ttf",  # Windows
+                "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"
+            ],
+            # Serif fonts
+            "Times New Roman": [
+                "/usr/share/fonts/truetype/liberation/LiberationSerif-Regular.ttf",
+                "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf",
+                "/System/Library/Fonts/Times.ttc",  # macOS
+                "/Windows/Fonts/times.ttf"  # Windows
+            ],
+            "Georgia": [
+                "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf",
+                "/System/Library/Fonts/Georgia.ttf",  # macOS
+                "/Windows/Fonts/georgia.ttf",  # Windows
+                "/usr/share/fonts/truetype/liberation/LiberationSerif-Regular.ttf"
+            ],
+            "Palatino": [
+                "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf",
+                "/System/Library/Fonts/Palatino.ttc",  # macOS
+                "/Windows/Fonts/pala.ttf",  # Windows
+                "/usr/share/fonts/truetype/liberation/LiberationSerif-Regular.ttf"
+            ],
+            # Monospace fonts
+            "Courier New": [
+                "/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf",
+                "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
+                "/System/Library/Fonts/Courier New.ttf",  # macOS
+                "/Windows/Fonts/cour.ttf"  # Windows
+            ],
+            # Display fonts
+            "Impact": [
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+                "/System/Library/Fonts/Impact.ttf",  # macOS
+                "/Windows/Fonts/impact.ttf",  # Windows
+                "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"
+            ],
+            "Comic Sans MS": [
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+                "/System/Library/Fonts/Comic Sans MS.ttf",  # macOS
+                "/Windows/Fonts/comic.ttf",  # Windows
+                "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"
+            ]
         }
         
-        # 首先尝试系统字体
-        if font_family in font_paths and os.path.exists(font_paths[font_family]):
-            return font_paths[font_family]
+        # 首先尝试指定字体的多个路径
+        if font_family in font_paths:
+            for font_path in font_paths[font_family]:
+                if os.path.exists(font_path):
+                    return font_path
         
         # 尝试查找中文字体
         chinese_fonts = [
@@ -328,8 +391,14 @@ class TextOverlayService:
             if os.path.exists(font_path):
                 return font_path
         
-        # 默认使用Arial
-        return font_paths.get("Arial", "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf")
+        # 默认使用Arial的第一个可用路径
+        default_fonts = font_paths.get("Arial", ["/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"])
+        for font_path in default_fonts:
+            if os.path.exists(font_path):
+                return font_path
+        
+        # 最后的后备方案
+        return "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"
     
     def validate_style(self, style: TextOverlayStyle) -> Tuple[bool, str]:
         """

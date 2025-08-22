@@ -276,6 +276,21 @@ class TextOverlayVideoNode:
                     "default": "底部居中",
                     "tooltip": "文本在视频中的垂直位置（水平方向始终居中）"
                 }),
+                "字体类型": ([
+                    "Arial",              # Sans-serif
+                    "Times New Roman",    # Serif
+                    "Courier New",        # Monospace
+                    "Helvetica",          # Sans-serif
+                    "Georgia",            # Serif
+                    "Verdana",            # Sans-serif
+                    "Impact",             # Display
+                    "Comic Sans MS",      # Casual
+                    "Trebuchet MS",       # Sans-serif
+                    "Palatino"            # Serif
+                ], {
+                    "default": "Arial",
+                    "tooltip": "字体类型选择"
+                }),
                 "字体大小": ("INT", {
                     "default": 24,
                     "min": 12,
@@ -382,7 +397,7 @@ class TextOverlayVideoNode:
     OUTPUT_NODE = False
     
     def process_text_overlay(self, images, 文本内容: str, 文本位置: str, 
-                           字体大小: int, 字体颜色: str, 背景颜色: str,
+                           字体类型: str, 字体大小: int, 字体颜色: str, 背景颜色: str,
                            背景透明度: float, 每行字符数: int, **kwargs) -> Tuple[Any, str]:
         """
         处理文本覆盖
@@ -391,6 +406,7 @@ class TextOverlayVideoNode:
             images: 输入图像序列
             文本内容: 文本内容
             文本位置: 位置
+            字体类型: 字体类型
             字体大小: 字体大小
             字体颜色: 字体颜色预设
             背景颜色: 背景颜色预设
@@ -435,7 +451,7 @@ class TextOverlayVideoNode:
             progress.log_progress("初始化配置", f"文本: '{文本内容[:20]}{'...' if len(文本内容) > 20 else ''}'", 10.0)
             log_messages.append(f"开始处理文本覆盖: '{文本内容}'")
             log_messages.append(f"换行后文本: {text_stats['total_lines']}行, 最长{text_stats['max_line_length']}字符")
-            log_messages.append(f"位置: {文本位置}, 字体大小: {字体大小}")
+            log_messages.append(f"位置: {文本位置}, 字体: {字体类型}, 大小: {字体大小}px")
             log_messages.append(f"位置计算: 按视频高度比例自适应")
             log_messages.append(f"字体颜色: {字体颜色} {font_rgb}")
             log_messages.append(f"背景颜色: {背景颜色} {background_rgb}")
@@ -444,6 +460,7 @@ class TextOverlayVideoNode:
             # 创建样式配置
             style = TextOverlayStyle()
             style.position_preset = position_en
+            style.font_family = 字体类型
             style.font_size = 字体大小
             style.font_color = font_rgb
             style.background_color = background_rgb
