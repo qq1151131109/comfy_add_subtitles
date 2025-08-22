@@ -247,7 +247,7 @@ class TextOverlayVideoNode:
         """定义节点输入类型"""
         return {
             "required": {
-                "图像序列": ("IMAGE", {
+                "images": ("IMAGE", {
                     "tooltip": "输入图像序列（来自视频或图像处理节点）"
                 }),
                 "文本内容": ("STRING", {
@@ -374,14 +374,14 @@ class TextOverlayVideoNode:
     CATEGORY = "Video/Text"
     OUTPUT_NODE = False
     
-    def process_text_overlay(self, 图像序列, 文本内容: str, 文本位置: str, 
+    def process_text_overlay(self, images, 文本内容: str, 文本位置: str, 
                            字体大小: int, 字体颜色: str, 背景颜色: str,
                            背景透明度: float, 每行字符数: int, **kwargs) -> Tuple[Any, str]:
         """
         处理文本覆盖
         
         Args:
-            图像序列: 输入图像序列
+            images: 输入图像序列
             文本内容: 文本内容
             文本位置: 位置
             字体大小: 字体大小
@@ -460,7 +460,7 @@ class TextOverlayVideoNode:
                 error_message = f"❌ 样式配置错误: {error_msg}"
                 progress.log_error(error_message)
                 log_messages.append(error_message)
-                return 图像序列, "\n".join(log_messages)
+                return images, "\n".join(log_messages)
             
             # 步骤3: 准备临时文件
             progress.log_progress("准备临时文件", "创建输入输出文件", 30.0)
@@ -479,12 +479,12 @@ class TextOverlayVideoNode:
             try:
                 # 步骤4: 转换图像序列为视频
                 progress.log_progress("转换图像序列", f"临时文件: {os.path.basename(temp_input_path)}", 40.0)
-                success = self._images_to_video(图像序列, temp_input_path)
+                success = self._images_to_video(images, temp_input_path)
                 if not success:
                     error_message = "❌ 图像序列转换为视频失败"
                     progress.log_error(error_message)
                     log_messages.append(error_message)
-                    return 图像序列, "\n".join(log_messages)
+                    return images, "\n".join(log_messages)
                 
                 progress.log_progress("图像序列转换完成", "准备添加文本覆盖", 60.0)
                 log_messages.append("✅ 图像序列转换完成")
@@ -500,7 +500,7 @@ class TextOverlayVideoNode:
                     error_message = "❌ 文本覆盖添加失败"
                     progress.log_error(error_message)
                     log_messages.append(error_message)
-                    return 图像序列, "\n".join(log_messages)
+                    return images, "\n".join(log_messages)
                 
                 progress.log_progress("文本覆盖完成", "开始转换回图像序列", 85.0)
                 log_messages.append("✅ 文本覆盖添加完成")
@@ -514,7 +514,7 @@ class TextOverlayVideoNode:
                     error_message = "❌ 视频转换为图像序列失败"
                     progress.log_error(error_message)
                     log_messages.append(error_message)
-                    return 图像序列, "\n".join(log_messages)
+                    return images, "\n".join(log_messages)
                 
                 # 步骤7: 完成处理
                 progress.log_success("文本覆盖处理完成！")
@@ -533,7 +533,7 @@ class TextOverlayVideoNode:
         except Exception as e:
             error_msg = f"❌ 处理过程中发生错误: {str(e)}"
             log_messages.append(error_msg)
-            return 图像序列, "\n".join(log_messages)
+            return images, "\n".join(log_messages)
     
     def _images_to_video(self, images, output_path: str) -> bool:
         """
