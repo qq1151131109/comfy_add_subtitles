@@ -95,6 +95,22 @@ class TextOverlayVideoNode:
     def get_color_rgb(self, color_name: str) -> tuple:
         """将颜色名称转换为RGB值"""
         color_map = {
+            # 中文颜色名称映射
+            "黑色": (0, 0, 0),
+            "白色": (255, 255, 255),
+            "红色": (255, 0, 0),
+            "绿色": (0, 255, 0),
+            "蓝色": (0, 0, 255),
+            "黄色": (255, 255, 0),
+            "青色": (0, 255, 255),
+            "洋红": (255, 0, 255),
+            "橙色": (255, 165, 0),
+            "紫色": (128, 0, 128),
+            "灰色": (128, 128, 128),
+            "深灰": (64, 64, 64),
+            "浅灰": (192, 192, 192),
+            "透明": (0, 0, 0),  # 透明背景用黑色，但会设置为完全透明
+            # 兼容英文名称（向下兼容）
             "black": (0, 0, 0),
             "white": (255, 255, 255),
             "red": (255, 0, 0),
@@ -108,9 +124,47 @@ class TextOverlayVideoNode:
             "gray": (128, 128, 128),
             "darkgray": (64, 64, 64),
             "lightgray": (192, 192, 192),
-            "transparent": (0, 0, 0)  # 透明背景用黑色，但会设置为完全透明
+            "transparent": (0, 0, 0)
         }
         return color_map.get(color_name, (0, 0, 0))
+    
+    def get_position_preset(self, position_name: str) -> str:
+        """将中文位置名称转换为英文预设名称"""
+        position_map = {
+            "底部居中": "bottom",
+            "底部偏下": "bottom_low", 
+            "底部偏上": "bottom_high",
+            "屏幕中央": "center",
+            "中央偏下": "center_low",
+            "中央偏上": "center_high",
+            "顶部居中": "top",
+            "顶部偏下": "top_low",
+            "顶部偏上": "top_high",
+            # 兼容英文名称（向下兼容）
+            "bottom": "bottom",
+            "bottom_low": "bottom_low",
+            "bottom_high": "bottom_high",
+            "center": "center",
+            "center_low": "center_low",
+            "center_high": "center_high",
+            "top": "top",
+            "top_low": "top_low",
+            "top_high": "top_high"
+        }
+        return position_map.get(position_name, "bottom")
+    
+    def get_text_alignment(self, alignment_name: str) -> str:
+        """将中文对齐方式转换为英文"""
+        alignment_map = {
+            "居中": "center",
+            "左对齐": "left",
+            "右对齐": "right",
+            # 兼容英文名称（向下兼容）
+            "center": "center",
+            "left": "left",
+            "right": "right"
+        }
+        return alignment_map.get(alignment_name, "center")
     
     def wrap_text(self, text: str, max_chars_per_line: int) -> str:
         """
@@ -202,17 +256,17 @@ class TextOverlayVideoNode:
                     "placeholder": "要显示在视频上的文本"
                 }),
                 "position": ([
-                    "bottom",           # 底部居中
-                    "bottom_low",       # 底部偏下
-                    "bottom_high",      # 底部偏上
-                    "center",           # 屏幕中央
-                    "center_low",       # 中央偏下
-                    "center_high",      # 中央偏上
-                    "top",              # 顶部居中
-                    "top_low",          # 顶部偏下
-                    "top_high"          # 顶部偏上
+                    "底部居中",          # bottom
+                    "底部偏下",          # bottom_low
+                    "底部偏上",          # bottom_high
+                    "屏幕中央",          # center
+                    "中央偏下",          # center_low
+                    "中央偏上",          # center_high
+                    "顶部居中",          # top
+                    "顶部偏下",          # top_low
+                    "顶部偏上"           # top_high
                 ], {
-                    "default": "bottom",
+                    "default": "底部居中",
                     "tooltip": "文本在视频中的垂直位置（水平方向始终居中）"
                 }),
                 "font_size": ("INT", {
@@ -223,38 +277,38 @@ class TextOverlayVideoNode:
                     "tooltip": "字体大小（像素）"
                 }),
                 "font_color": ([
-                    "black",        # 黑色 (0,0,0)
-                    "white",        # 白色 (255,255,255)
-                    "red",          # 红色 (255,0,0)
-                    "green",        # 绿色 (0,255,0)
-                    "blue",         # 蓝色 (0,0,255)
-                    "yellow",       # 黄色 (255,255,0)
-                    "cyan",         # 青色 (0,255,255)
-                    "magenta",      # 洋红 (255,0,255)
-                    "orange",       # 橙色 (255,165,0)
-                    "purple",       # 紫色 (128,0,128)
-                    "gray",         # 灰色 (128,128,128)
-                    "darkgray"      # 深灰 (64,64,64)
+                    "黑色",          # black
+                    "白色",          # white
+                    "红色",          # red
+                    "绿色",          # green
+                    "蓝色",          # blue
+                    "黄色",          # yellow
+                    "青色",          # cyan
+                    "洋红",          # magenta
+                    "橙色",          # orange
+                    "紫色",          # purple
+                    "灰色",          # gray
+                    "深灰"           # darkgray
                 ], {
-                    "default": "black",
+                    "default": "黑色",
                     "tooltip": "字体颜色预设"
                 }),
                 "background_color": ([
-                    "white",        # 白色 (255,255,255)
-                    "black",        # 黑色 (0,0,0)
-                    "transparent",  # 透明背景
-                    "red",          # 红色 (255,0,0)
-                    "green",        # 绿色 (0,255,0)
-                    "blue",         # 蓝色 (0,0,255)
-                    "yellow",       # 黄色 (255,255,0)
-                    "cyan",         # 青色 (0,255,255)
-                    "magenta",      # 洋红 (255,0,255)
-                    "orange",       # 橙色 (255,165,0)
-                    "purple",       # 紫色 (128,0,128)
-                    "gray",         # 灰色 (128,128,128)
-                    "lightgray"     # 浅灰 (192,192,192)
+                    "白色",          # white
+                    "黑色",          # black
+                    "透明",          # transparent
+                    "红色",          # red
+                    "绿色",          # green
+                    "蓝色",          # blue
+                    "黄色",          # yellow
+                    "青色",          # cyan
+                    "洋红",          # magenta
+                    "橙色",          # orange
+                    "紫色",          # purple
+                    "灰色",          # gray
+                    "浅灰"           # lightgray
                 ], {
-                    "default": "white",
+                    "default": "白色",
                     "tooltip": "背景颜色预设"
                 }),
                 "background_opacity": ("FLOAT", {
@@ -282,11 +336,11 @@ class TextOverlayVideoNode:
                     "tooltip": "是否使用粗体字"
                 }),
                 "text_alignment": ([
-                    "center",
-                    "left", 
-                    "right"
+                    "居中",        # center
+                    "左对齐",      # left
+                    "右对齐"       # right
                 ], {
-                    "default": "center",
+                    "default": "居中",
                     "tooltip": "文本对齐方式"
                 }),
                 "enable_shadow": ("BOOLEAN", {
@@ -352,7 +406,7 @@ class TextOverlayVideoNode:
             # 获取可选参数
             enable_background = kwargs.get("enable_background", True)
             font_bold = kwargs.get("font_bold", False)
-            text_alignment = kwargs.get("text_alignment", "center")
+            text_alignment_cn = kwargs.get("text_alignment", "居中")
             enable_shadow = kwargs.get("enable_shadow", False)
             enable_border = kwargs.get("enable_border", False)
             margin_x = kwargs.get("margin_x", 50)
@@ -360,9 +414,11 @@ class TextOverlayVideoNode:
             
             log_messages = []
             
-            # 转换颜色预设为RGB值
+            # 转换中文选项为内部使用的英文值
+            position_en = self.get_position_preset(position)
             font_rgb = self.get_color_rgb(font_color)
             background_rgb = self.get_color_rgb(background_color)
+            text_alignment = self.get_text_alignment(text_alignment_cn)
             
             # 处理文本换行
             wrapped_text = self.wrap_text(text_content, max_chars_per_line)
@@ -380,12 +436,12 @@ class TextOverlayVideoNode:
             
             # 创建样式配置
             style = TextOverlayStyle()
-            style.position_preset = position
+            style.position_preset = position_en
             style.font_size = font_size
             style.font_color = font_rgb
             style.background_color = background_rgb
-            style.background_opacity = background_opacity if background_color != "transparent" else 0.0
-            style.background_enabled = enable_background and background_color != "transparent"
+            style.background_opacity = background_opacity if background_color != "透明" else 0.0
+            style.background_enabled = enable_background and background_color != "透明"
             style.font_bold = font_bold
             style.text_alignment = text_alignment
             style.enable_shadow = enable_shadow
