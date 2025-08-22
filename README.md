@@ -104,7 +104,7 @@ pip install -r requirements.txt
   - `transparent` - 无背景（透明）
   - `red`, `green`, `blue`, `yellow`, `cyan`, `magenta`
   - `orange`, `purple`, `gray`, `lightgray`
-- **`background_opacity`**: 背景透明度（0.0-1.0，默认0.8）
+- **`background_opacity`**: 背景透明度（0.0=完全透明，1.0=完全不透明，默认0.8）
 - **`background_radius`**: 背景圆角半径（0-50px，默认8）
 - **`max_chars_per_line`**: 每行最大字符数（10-100，默认30）
 
