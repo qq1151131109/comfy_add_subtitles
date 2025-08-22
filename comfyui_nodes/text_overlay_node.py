@@ -247,15 +247,15 @@ class TextOverlayVideoNode:
         """定义节点输入类型"""
         return {
             "required": {
-                "images": ("IMAGE", {
+                "图像序列": ("IMAGE", {
                     "tooltip": "输入图像序列（来自视频或图像处理节点）"
                 }),
-                "text_content": ("STRING", {
+                "文本内容": ("STRING", {
                     "default": "在这里输入文本内容",
                     "multiline": True,
                     "placeholder": "要显示在视频上的文本"
                 }),
-                "position": ([
+                "文本位置": ([
                     "底部居中",          # bottom
                     "底部偏下",          # bottom_low
                     "底部偏上",          # bottom_high
@@ -269,14 +269,14 @@ class TextOverlayVideoNode:
                     "default": "底部居中",
                     "tooltip": "文本在视频中的垂直位置（水平方向始终居中）"
                 }),
-                "font_size": ("INT", {
+                "字体大小": ("INT", {
                     "default": 24,
                     "min": 12,
                     "max": 72,
                     "step": 1,
                     "tooltip": "字体大小（像素）"
                 }),
-                "font_color": ([
+                "字体颜色": ([
                     "黑色",          # black
                     "白色",          # white
                     "红色",          # red
@@ -293,7 +293,7 @@ class TextOverlayVideoNode:
                     "default": "黑色",
                     "tooltip": "字体颜色预设"
                 }),
-                "background_color": ([
+                "背景颜色": ([
                     "白色",          # white
                     "黑色",          # black
                     "透明",          # transparent
@@ -311,14 +311,14 @@ class TextOverlayVideoNode:
                     "default": "白色",
                     "tooltip": "背景颜色预设"
                 }),
-                "background_opacity": ("FLOAT", {
+                "背景透明度": ("FLOAT", {
                     "default": 0.8,
                     "min": 0.0,
                     "max": 1.0,
                     "step": 0.1,
                     "tooltip": "背景透明度（0=完全透明，1=完全不透明）"
                 }),
-                "max_chars_per_line": ("INT", {
+                "每行字符数": ("INT", {
                     "default": 30,
                     "min": 10,
                     "max": 100,
@@ -327,15 +327,15 @@ class TextOverlayVideoNode:
                 })
             },
             "optional": {
-                "enable_background": ("BOOLEAN", {
+                "启用背景": ("BOOLEAN", {
                     "default": True,
                     "tooltip": "是否启用文字背景"
                 }),
-                "font_bold": ("BOOLEAN", {
+                "粗体字": ("BOOLEAN", {
                     "default": False,
                     "tooltip": "是否使用粗体字"
                 }),
-                "text_alignment": ([
+                "文本对齐": ([
                     "居中",        # center
                     "左对齐",      # left
                     "右对齐"       # right
@@ -343,22 +343,22 @@ class TextOverlayVideoNode:
                     "default": "居中",
                     "tooltip": "文本对齐方式"
                 }),
-                "enable_shadow": ("BOOLEAN", {
+                "启用阴影": ("BOOLEAN", {
                     "default": False,
                     "tooltip": "是否启用文字阴影"
                 }),
-                "enable_border": ("BOOLEAN", {
+                "启用边框": ("BOOLEAN", {
                     "default": False,
                     "tooltip": "是否启用文字边框"
                 }),
-                "margin_x": ("INT", {
+                "水平边距": ("INT", {
                     "default": 50,
                     "min": 0,
                     "max": 200,
                     "step": 5,
                     "tooltip": "水平边距（像素）"
                 }),
-                "margin_y": ("INT", {
+                "垂直边距": ("INT", {
                     "default": 50,
                     "min": 0,
                     "max": 200,
@@ -374,21 +374,21 @@ class TextOverlayVideoNode:
     CATEGORY = "Video/Text"
     OUTPUT_NODE = False
     
-    def process_text_overlay(self, images, text_content: str, position: str, 
-                           font_size: int, font_color: str, background_color: str,
-                           background_opacity: float, max_chars_per_line: int, **kwargs) -> Tuple[Any, str]:
+    def process_text_overlay(self, 图像序列, 文本内容: str, 文本位置: str, 
+                           字体大小: int, 字体颜色: str, 背景颜色: str,
+                           背景透明度: float, 每行字符数: int, **kwargs) -> Tuple[Any, str]:
         """
         处理文本覆盖
         
         Args:
-            images: 输入图像序列
-            text_content: 文本内容
-            position: 位置
-            font_size: 字体大小
-            font_color: 字体颜色预设
-            background_color: 背景颜色预设
-            background_opacity: 背景透明度
-            max_chars_per_line: 每行最大字符数
+            图像序列: 输入图像序列
+            文本内容: 文本内容
+            文本位置: 位置
+            字体大小: 字体大小
+            字体颜色: 字体颜色预设
+            背景颜色: 背景颜色预设
+            背景透明度: 背景透明度
+            每行字符数: 每行最大字符数
             **kwargs: 其他可选参数
             
         Returns:
@@ -404,44 +404,44 @@ class TextOverlayVideoNode:
         
         try:
             # 获取可选参数
-            enable_background = kwargs.get("enable_background", True)
-            font_bold = kwargs.get("font_bold", False)
-            text_alignment_cn = kwargs.get("text_alignment", "居中")
-            enable_shadow = kwargs.get("enable_shadow", False)
-            enable_border = kwargs.get("enable_border", False)
-            margin_x = kwargs.get("margin_x", 50)
-            margin_y = kwargs.get("margin_y", 50)
+            enable_background = kwargs.get("启用背景", True)
+            font_bold = kwargs.get("粗体字", False)
+            text_alignment_cn = kwargs.get("文本对齐", "居中")
+            enable_shadow = kwargs.get("启用阴影", False)
+            enable_border = kwargs.get("启用边框", False)
+            margin_x = kwargs.get("水平边距", 50)
+            margin_y = kwargs.get("垂直边距", 50)
             
             log_messages = []
             
             # 转换中文选项为内部使用的英文值
-            position_en = self.get_position_preset(position)
-            font_rgb = self.get_color_rgb(font_color)
-            background_rgb = self.get_color_rgb(background_color)
+            position_en = self.get_position_preset(文本位置)
+            font_rgb = self.get_color_rgb(字体颜色)
+            background_rgb = self.get_color_rgb(背景颜色)
             text_alignment = self.get_text_alignment(text_alignment_cn)
             
             # 处理文本换行
-            wrapped_text = self.wrap_text(text_content, max_chars_per_line)
+            wrapped_text = self.wrap_text(文本内容, 每行字符数)
             text_stats = self.get_text_stats(wrapped_text)
             
             # 步骤1: 显示配置信息
-            progress.log_progress("初始化配置", f"文本: '{text_content[:20]}{'...' if len(text_content) > 20 else ''}'", 10.0)
-            log_messages.append(f"开始处理文本覆盖: '{text_content}'")
+            progress.log_progress("初始化配置", f"文本: '{文本内容[:20]}{'...' if len(文本内容) > 20 else ''}'", 10.0)
+            log_messages.append(f"开始处理文本覆盖: '{文本内容}'")
             log_messages.append(f"换行后文本: {text_stats['total_lines']}行, 最长{text_stats['max_line_length']}字符")
-            log_messages.append(f"位置: {position}, 字体大小: {font_size}")
+            log_messages.append(f"位置: {文本位置}, 字体大小: {字体大小}")
             log_messages.append(f"位置计算: 按视频高度比例自适应")
-            log_messages.append(f"字体颜色: {font_color} {font_rgb}")
-            log_messages.append(f"背景颜色: {background_color} {background_rgb}")
-            log_messages.append(f"背景透明度: {background_opacity}")
+            log_messages.append(f"字体颜色: {字体颜色} {font_rgb}")
+            log_messages.append(f"背景颜色: {背景颜色} {background_rgb}")
+            log_messages.append(f"背景透明度: {背景透明度}")
             
             # 创建样式配置
             style = TextOverlayStyle()
             style.position_preset = position_en
-            style.font_size = font_size
+            style.font_size = 字体大小
             style.font_color = font_rgb
             style.background_color = background_rgb
-            style.background_opacity = background_opacity if background_color != "透明" else 0.0
-            style.background_enabled = enable_background and background_color != "透明"
+            style.background_opacity = 背景透明度 if 背景颜色 != "透明" else 0.0
+            style.background_enabled = enable_background and 背景颜色 != "透明"
             style.font_bold = font_bold
             style.text_alignment = text_alignment
             style.enable_shadow = enable_shadow
@@ -460,7 +460,7 @@ class TextOverlayVideoNode:
                 error_message = f"❌ 样式配置错误: {error_msg}"
                 progress.log_error(error_message)
                 log_messages.append(error_message)
-                return images, "\n".join(log_messages)
+                return 图像序列, "\n".join(log_messages)
             
             # 步骤3: 准备临时文件
             progress.log_progress("准备临时文件", "创建输入输出文件", 30.0)
@@ -479,12 +479,12 @@ class TextOverlayVideoNode:
             try:
                 # 步骤4: 转换图像序列为视频
                 progress.log_progress("转换图像序列", f"临时文件: {os.path.basename(temp_input_path)}", 40.0)
-                success = self._images_to_video(images, temp_input_path)
+                success = self._images_to_video(图像序列, temp_input_path)
                 if not success:
                     error_message = "❌ 图像序列转换为视频失败"
                     progress.log_error(error_message)
                     log_messages.append(error_message)
-                    return images, "\n".join(log_messages)
+                    return 图像序列, "\n".join(log_messages)
                 
                 progress.log_progress("图像序列转换完成", "准备添加文本覆盖", 60.0)
                 log_messages.append("✅ 图像序列转换完成")
@@ -500,7 +500,7 @@ class TextOverlayVideoNode:
                     error_message = "❌ 文本覆盖添加失败"
                     progress.log_error(error_message)
                     log_messages.append(error_message)
-                    return images, "\n".join(log_messages)
+                    return 图像序列, "\n".join(log_messages)
                 
                 progress.log_progress("文本覆盖完成", "开始转换回图像序列", 85.0)
                 log_messages.append("✅ 文本覆盖添加完成")
@@ -514,7 +514,7 @@ class TextOverlayVideoNode:
                     error_message = "❌ 视频转换为图像序列失败"
                     progress.log_error(error_message)
                     log_messages.append(error_message)
-                    return images, "\n".join(log_messages)
+                    return 图像序列, "\n".join(log_messages)
                 
                 # 步骤7: 完成处理
                 progress.log_success("文本覆盖处理完成！")
@@ -533,7 +533,7 @@ class TextOverlayVideoNode:
         except Exception as e:
             error_msg = f"❌ 处理过程中发生错误: {str(e)}"
             log_messages.append(error_msg)
-            return images, "\n".join(log_messages)
+            return 图像序列, "\n".join(log_messages)
     
     def _images_to_video(self, images, output_path: str) -> bool:
         """
