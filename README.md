@@ -99,7 +99,9 @@ pip install -r requirements.txt
   - `black`, `white`, `red`, `green`, `blue`, `yellow`
   - `cyan`, `magenta`, `orange`, `purple`, `gray`, `darkgray`
 - **`background_color`**: 背景颜色预设
-  - `white`, `black`, `transparent`（无背景）
+  - `white` - 白色背景（默认）
+  - `black` - 黑色背景
+  - `transparent` - 无背景（透明）
   - `red`, `green`, `blue`, `yellow`, `cyan`, `magenta`
   - `orange`, `purple`, `gray`, `lightgray`
 - **`background_opacity`**: 背景透明度（0.0-1.0，默认0.8）
@@ -196,7 +198,7 @@ graph LR
 - 位置: `center` | 字体: `white` | 背景: `red` | 粗体: 是
 
 **🌟 无背景效果**
-- 位置: `bottom` | 字体: `white` | 背景: `transparent` | 阴影: 是
+- 位置: `bottom` | 字体: `white` | 背景: `transparent`（透明） | 阴影: 是
 
 ## 📁 项目结构
 
