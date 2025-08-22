@@ -242,8 +242,8 @@ class TextOverlayService:
         filter_parts = []
         
         # 基本文本配置
-        # 转义文本中的特殊字符
-        escaped_text = text_content.replace(':', '\\:').replace("'", "\\'")
+        # 转义文本中的特殊字符，包括换行符
+        escaped_text = text_content.replace(':', '\\:').replace("'", "\\'").replace('\n', '\\n').replace('\r', '\\r')
         filter_parts.append(f"text='{escaped_text}'")
         
         # 字体配置
