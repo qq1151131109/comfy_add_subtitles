@@ -7,7 +7,9 @@ import os
 import sys
 import logging
 import tempfile
+import time
 from typing import Dict, Any, Tuple
+from datetime import datetime
 
 # 添加父目录到Python路径以支持导入
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -20,11 +22,171 @@ except ImportError:
     from services.text_overlay_service import TextOverlayService, TextOverlayStyle, TextAlignment
 
 
+class ProgressLogger:
+    """进度日志记录器"""
+    
+    def __init__(self, task_name: str):
+        self.task_name = task_name
+        self.start_time = time.time()
+        self.last_update = self.start_time
+        
+    def log_progress(self, step: str, detail: str = "", progress_percent: float = None):
+        """记录进度信息"""
+        current_time = time.time()
+        elapsed = current_time - self.start_time
+        
+        # 格式化输出
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        
+        if progress_percent is not None:
+            progress_bar = self._create_progress_bar(progress_percent)
+            print(f"\033[32m[{timestamp}]\033[0m \033[36m{self.task_name}\033[0m - {step}")
+            print(f"         {progress_bar} {progress_percent:.1f}%")
+            if detail:
+                print(f"         📝 {detail}")
+        else:
+            print(f"\033[32m[{timestamp}]\033[0m \033[36m{self.task_name}\033[0m - 🔄 {step}")
+            if detail:
+                print(f"         📝 {detail}")
+        
+        print(f"         ⏱️  已用时: {elapsed:.1f}秒")
+        print()  # 空行分隔
+        
+    def log_success(self, message: str):
+        """记录成功信息"""
+        elapsed = time.time() - self.start_time
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        print(f"\033[32m[{timestamp}]\033[0m \033[36m{self.task_name}\033[0m - ✅ {message}")
+        print(f"         ⏱️  总用时: {elapsed:.1f}秒")
+        print()
+        
+    def log_error(self, message: str):
+        """记录错误信息"""
+        elapsed = time.time() - self.start_time
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        print(f"\033[31m[{timestamp}]\033[0m \033[36m{self.task_name}\033[0m - ❌ {message}")
+        print(f"         ⏱️  用时: {elapsed:.1f}秒")
+        print()
+        
+    def _create_progress_bar(self, percent: float, width: int = 30) -> str:
+        """创建进度条"""
+        filled = int(width * percent / 100)
+        bar = "█" * filled + "░" * (width - filled)
+        return f"[{bar}]"
+
+
 class TextOverlayVideoNode:
     """ComfyUI文本覆盖视频节点"""
     
     def __init__(self):
         self.service = TextOverlayService()
+        self.setup_logging()
+    
+    def setup_logging(self):
+        """设置日志配置"""
+        # 配置终端日志输出
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+            force=True
+        )
+        self.logger = logging.getLogger(f"TextOverlay_{id(self)}")
+    
+    def get_color_rgb(self, color_name: str) -> tuple:
+        """将颜色名称转换为RGB值"""
+        color_map = {
+            "black": (0, 0, 0),
+            "white": (255, 255, 255),
+            "red": (255, 0, 0),
+            "green": (0, 255, 0),
+            "blue": (0, 0, 255),
+            "yellow": (255, 255, 0),
+            "cyan": (0, 255, 255),
+            "magenta": (255, 0, 255),
+            "orange": (255, 165, 0),
+            "purple": (128, 0, 128),
+            "gray": (128, 128, 128),
+            "darkgray": (64, 64, 64),
+            "lightgray": (192, 192, 192),
+            "transparent": (0, 0, 0)  # 透明背景用黑色，但会设置为完全透明
+        }
+        return color_map.get(color_name, (0, 0, 0))
+    
+    def wrap_text(self, text: str, max_chars_per_line: int) -> str:
+        """
+        文本自动换行处理
+        
+        Args:
+            text: 原始文本
+            max_chars_per_line: 每行最大字符数
+            
+        Returns:
+            处理后的文本（包含换行符）
+        """
+        if not text:
+            return text
+            
+        # 先处理已有的换行符
+        lines = text.split('\n')
+        wrapped_lines = []
+        
+        for line in lines:
+            if len(line) <= max_chars_per_line:
+                wrapped_lines.append(line)
+                continue
+                
+            # 对长行进行处理
+            current_line = ""
+            words = line.split(' ')
+            
+            for word in words:
+                # 如果单个单词就超过了最大长度，强制断开
+                if len(word) > max_chars_per_line:
+                    # 先添加当前行（如果有内容）
+                    if current_line:
+                        wrapped_lines.append(current_line.strip())
+                        current_line = ""
+                    
+                    # 强制断开长单词
+                    for i in range(0, len(word), max_chars_per_line):
+                        chunk = word[i:i + max_chars_per_line]
+                        wrapped_lines.append(chunk)
+                    continue
+                
+                # 检查添加这个单词后是否会超过限制
+                test_line = current_line + (" " if current_line else "") + word
+                
+                if len(test_line) <= max_chars_per_line:
+                    current_line = test_line
+                else:
+                    # 当前行已满，开始新行
+                    if current_line:
+                        wrapped_lines.append(current_line.strip())
+                    current_line = word
+            
+            # 添加最后一行
+            if current_line:
+                wrapped_lines.append(current_line.strip())
+        
+        return '\n'.join(wrapped_lines)
+    
+    def get_text_stats(self, text: str) -> dict:
+        """
+        获取文本统计信息
+        
+        Args:
+            text: 文本内容
+            
+        Returns:
+            文本统计信息字典
+        """
+        lines = text.split('\n')
+        return {
+            'total_chars': len(text),
+            'total_lines': len(lines),
+            'max_line_length': max(len(line) for line in lines) if lines else 0,
+            'avg_line_length': sum(len(line) for line in lines) / len(lines) if lines else 0
+        }
         
     @classmethod
     def INPUT_TYPES(cls):
@@ -40,18 +202,18 @@ class TextOverlayVideoNode:
                     "placeholder": "要显示在视频上的文本"
                 }),
                 "position": ([
-                    "bottom_center",    # 底部居中
-                    "bottom_left",      # 底部左对齐
-                    "bottom_right",     # 底部右对齐
-                    "top_center",       # 顶部居中
-                    "top_left",         # 顶部左对齐
-                    "top_right",        # 顶部右对齐
+                    "bottom",           # 底部居中
+                    "bottom_low",       # 底部偏下
+                    "bottom_high",      # 底部偏上
                     "center",           # 屏幕中央
-                    "center_left",      # 中央左对齐
-                    "center_right"      # 中央右对齐
+                    "center_low",       # 中央偏下
+                    "center_high",      # 中央偏上
+                    "top",              # 顶部居中
+                    "top_low",          # 顶部偏下
+                    "top_high"          # 顶部偏上
                 ], {
-                    "default": "bottom_center",
-                    "tooltip": "文本在视频中的位置"
+                    "default": "bottom",
+                    "tooltip": "文本在视频中的垂直位置（水平方向始终居中）"
                 }),
                 "font_size": ("INT", {
                     "default": 24,
@@ -60,47 +222,40 @@ class TextOverlayVideoNode:
                     "step": 1,
                     "tooltip": "字体大小（像素）"
                 }),
-                "font_color_r": ("INT", {
-                    "default": 0,
-                    "min": 0,
-                    "max": 255,
-                    "step": 1,
-                    "tooltip": "字体颜色红色分量"
+                "font_color": ([
+                    "black",        # 黑色 (0,0,0)
+                    "white",        # 白色 (255,255,255)
+                    "red",          # 红色 (255,0,0)
+                    "green",        # 绿色 (0,255,0)
+                    "blue",         # 蓝色 (0,0,255)
+                    "yellow",       # 黄色 (255,255,0)
+                    "cyan",         # 青色 (0,255,255)
+                    "magenta",      # 洋红 (255,0,255)
+                    "orange",       # 橙色 (255,165,0)
+                    "purple",       # 紫色 (128,0,128)
+                    "gray",         # 灰色 (128,128,128)
+                    "darkgray"      # 深灰 (64,64,64)
+                ], {
+                    "default": "black",
+                    "tooltip": "字体颜色预设"
                 }),
-                "font_color_g": ("INT", {
-                    "default": 0,
-                    "min": 0,
-                    "max": 255,
-                    "step": 1,
-                    "tooltip": "字体颜色绿色分量"
-                }),
-                "font_color_b": ("INT", {
-                    "default": 0,
-                    "min": 0,
-                    "max": 255,
-                    "step": 1,
-                    "tooltip": "字体颜色蓝色分量"
-                }),
-                "background_color_r": ("INT", {
-                    "default": 255,
-                    "min": 0,
-                    "max": 255,
-                    "step": 1,
-                    "tooltip": "背景颜色红色分量"
-                }),
-                "background_color_g": ("INT", {
-                    "default": 255,
-                    "min": 0,
-                    "max": 255,
-                    "step": 1,
-                    "tooltip": "背景颜色绿色分量"
-                }),
-                "background_color_b": ("INT", {
-                    "default": 255,
-                    "min": 0,
-                    "max": 255,
-                    "step": 1,
-                    "tooltip": "背景颜色蓝色分量"
+                "background_color": ([
+                    "white",        # 白色 (255,255,255)
+                    "black",        # 黑色 (0,0,0)
+                    "transparent",  # 透明背景
+                    "red",          # 红色 (255,0,0)
+                    "green",        # 绿色 (0,255,0)
+                    "blue",         # 蓝色 (0,0,255)
+                    "yellow",       # 黄色 (255,255,0)
+                    "cyan",         # 青色 (0,255,255)
+                    "magenta",      # 洋红 (255,0,255)
+                    "orange",       # 橙色 (255,165,0)
+                    "purple",       # 紫色 (128,0,128)
+                    "gray",         # 灰色 (128,128,128)
+                    "lightgray"     # 浅灰 (192,192,192)
+                ], {
+                    "default": "white",
+                    "tooltip": "背景颜色预设"
                 }),
                 "background_opacity": ("FLOAT", {
                     "default": 0.8,
@@ -108,6 +263,20 @@ class TextOverlayVideoNode:
                     "max": 1.0,
                     "step": 0.1,
                     "tooltip": "背景透明度（0=完全透明，1=完全不透明）"
+                }),
+                "background_radius": ("INT", {
+                    "default": 8,
+                    "min": 0,
+                    "max": 50,
+                    "step": 1,
+                    "tooltip": "背景圆角半径（像素）"
+                }),
+                "max_chars_per_line": ("INT", {
+                    "default": 30,
+                    "min": 10,
+                    "max": 100,
+                    "step": 1,
+                    "tooltip": "每行最大字符数（超过自动换行）"
                 })
             },
             "optional": {
@@ -159,9 +328,9 @@ class TextOverlayVideoNode:
     OUTPUT_NODE = False
     
     def process_text_overlay(self, images, text_content: str, position: str, 
-                           font_size: int, font_color_r: int, font_color_g: int, font_color_b: int,
-                           background_color_r: int, background_color_g: int, background_color_b: int,
-                           background_opacity: float, **kwargs) -> Tuple[Any, str]:
+                           font_size: int, font_color: str, background_color: str,
+                           background_opacity: float, background_radius: int, 
+                           max_chars_per_line: int, **kwargs) -> Tuple[Any, str]:
         """
         处理文本覆盖
         
@@ -170,14 +339,24 @@ class TextOverlayVideoNode:
             text_content: 文本内容
             position: 位置
             font_size: 字体大小
-            font_color_r, font_color_g, font_color_b: 字体颜色RGB
-            background_color_r, background_color_g, background_color_b: 背景颜色RGB
+            font_color: 字体颜色预设
+            background_color: 背景颜色预设
             background_opacity: 背景透明度
+            background_radius: 背景圆角半径
+            max_chars_per_line: 每行最大字符数
             **kwargs: 其他可选参数
             
         Returns:
             (处理后的图像序列, 处理日志)
         """
+        # 创建进度记录器
+        progress = ProgressLogger("文本覆盖处理")
+        
+        # 在终端显示开始信息
+        print("\n" + "="*60)
+        print("🎬 ComfyUI文本覆盖视频节点开始处理")
+        print("="*60)
+        
         try:
             # 获取可选参数
             enable_background = kwargs.get("enable_background", True)
@@ -189,19 +368,28 @@ class TextOverlayVideoNode:
             margin_y = kwargs.get("margin_y", 50)
             
             log_messages = []
+            
+            # 转换颜色预设为RGB值
+            font_rgb = self.get_color_rgb(font_color)
+            background_rgb = self.get_color_rgb(background_color)
+            
+            # 步骤1: 显示配置信息
+            progress.log_progress("初始化配置", f"文本: '{text_content[:20]}{'...' if len(text_content) > 20 else ''}'", 10.0)
             log_messages.append(f"开始处理文本覆盖: '{text_content}'")
             log_messages.append(f"位置: {position}, 字体大小: {font_size}")
-            log_messages.append(f"字体颜色: RGB({font_color_r}, {font_color_g}, {font_color_b})")
-            log_messages.append(f"背景颜色: RGB({background_color_r}, {background_color_g}, {background_color_b})")
+            log_messages.append(f"字体颜色: {font_color} {font_rgb}")
+            log_messages.append(f"背景颜色: {background_color} {background_rgb}")
+            log_messages.append(f"背景圆角: {background_radius}px")
             
             # 创建样式配置
             style = TextOverlayStyle()
             style.position_preset = position
             style.font_size = font_size
-            style.font_color = (font_color_r, font_color_g, font_color_b)
-            style.background_color = (background_color_r, background_color_g, background_color_b)
-            style.background_opacity = background_opacity
-            style.background_enabled = enable_background
+            style.font_color = font_rgb
+            style.background_color = background_rgb
+            style.background_opacity = background_opacity if background_color != "transparent" else 0.0
+            style.background_enabled = enable_background and background_color != "transparent"
+            style.background_radius = background_radius
             style.font_bold = font_bold
             style.text_alignment = text_alignment
             style.enable_shadow = enable_shadow
@@ -209,12 +397,17 @@ class TextOverlayVideoNode:
             style.margin_x = margin_x
             style.margin_y = margin_y
             
-            # 验证样式配置
+            # 步骤2: 验证样式配置
+            progress.log_progress("验证样式配置", f"位置: {position}, 大小: {font_size}px", 20.0)
             is_valid, error_msg = self.service.validate_style(style)
             if not is_valid:
                 error_message = f"❌ 样式配置错误: {error_msg}"
+                progress.log_error(error_message)
                 log_messages.append(error_message)
                 return images, "\n".join(log_messages)
+            
+            # 步骤3: 准备临时文件
+            progress.log_progress("准备临时文件", "创建输入输出文件", 30.0)
             
             # 由于ComfyUI中图像处理通常在内存中进行，
             # 这里我们需要将图像序列转换为临时视频文件进行处理
@@ -228,16 +421,20 @@ class TextOverlayVideoNode:
                 temp_output_path = temp_output.name
             
             try:
-                # 将图像序列保存为临时视频
+                # 步骤4: 转换图像序列为视频
+                progress.log_progress("转换图像序列", f"临时文件: {os.path.basename(temp_input_path)}", 40.0)
                 success = self._images_to_video(images, temp_input_path)
                 if not success:
                     error_message = "❌ 图像序列转换为视频失败"
+                    progress.log_error(error_message)
                     log_messages.append(error_message)
                     return images, "\n".join(log_messages)
                 
+                progress.log_progress("图像序列转换完成", "准备添加文本覆盖", 60.0)
                 log_messages.append("✅ 图像序列转换完成")
                 
-                # 添加文本覆盖
+                # 步骤5: 添加文本覆盖
+                progress.log_progress("添加文本覆盖", f"使用FFmpeg处理", 70.0)
                 log_messages.append("正在添加文本覆盖...")
                 success = self.service.add_text_overlay(
                     temp_input_path, text_content, temp_output_path, style
@@ -245,21 +442,28 @@ class TextOverlayVideoNode:
                 
                 if not success:
                     error_message = "❌ 文本覆盖添加失败"
+                    progress.log_error(error_message)
                     log_messages.append(error_message)
                     return images, "\n".join(log_messages)
                 
+                progress.log_progress("文本覆盖完成", "开始转换回图像序列", 85.0)
                 log_messages.append("✅ 文本覆盖添加完成")
                 
-                # 将处理后的视频转换回图像序列
+                # 步骤6: 将处理后的视频转换回图像序列
+                progress.log_progress("转换回图像序列", f"输出文件: {os.path.basename(temp_output_path)}", 90.0)
                 log_messages.append("正在转换回图像序列...")
                 processed_images = self._video_to_images(temp_output_path)
                 
                 if processed_images is None:
                     error_message = "❌ 视频转换为图像序列失败"
+                    progress.log_error(error_message)
                     log_messages.append(error_message)
                     return images, "\n".join(log_messages)
                 
+                # 步骤7: 完成处理
+                progress.log_success("文本覆盖处理完成！")
                 log_messages.append("✅ 处理完成！")
+                print("="*60)
                 return processed_images, "\n".join(log_messages)
                 
             finally:

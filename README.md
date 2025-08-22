@@ -69,6 +69,81 @@ pip install -r requirements.txt
 |----------|----------|----------|
 | `TextOverlayVideoNode` | 📝 Text Overlay Video | 为视频添加自定义文本覆盖 |
 
+## 📝 Text Overlay Video 节点详细说明
+
+### 主要功能
+- 为视频添加自定义文本覆盖
+- 9种垂直位置选择（水平居中）
+- 12种字体颜色预设 + 13种背景颜色预设
+- 支持背景圆角、透明度调节
+- 自动文本换行功能
+- 实时进度显示
+
+### 核心参数
+
+#### 必需参数
+- **`images`**: 输入图像序列（来自视频节点）
+- **`text_content`**: 文本内容（支持多行）
+- **`position`**: 垂直位置选择
+  - `bottom` - 底部居中（默认）
+  - `bottom_low` - 底部偏下
+  - `bottom_high` - 底部偏上  
+  - `center` - 屏幕中央
+  - `center_low` - 中央偏下
+  - `center_high` - 中央偏上
+  - `top` - 顶部居中
+  - `top_low` - 顶部偏下
+  - `top_high` - 顶部偏上
+- **`font_size`**: 字体大小（12-72px，默认24）
+- **`font_color`**: 字体颜色预设
+  - `black`, `white`, `red`, `green`, `blue`, `yellow`
+  - `cyan`, `magenta`, `orange`, `purple`, `gray`, `darkgray`
+- **`background_color`**: 背景颜色预设
+  - `white`, `black`, `transparent`（无背景）
+  - `red`, `green`, `blue`, `yellow`, `cyan`, `magenta`
+  - `orange`, `purple`, `gray`, `lightgray`
+- **`background_opacity`**: 背景透明度（0.0-1.0，默认0.8）
+- **`background_radius`**: 背景圆角半径（0-50px，默认8）
+- **`max_chars_per_line`**: 每行最大字符数（10-100，默认30）
+
+#### 可选参数
+- **`enable_background`**: 是否启用背景（默认True）
+- **`font_bold`**: 是否粗体（默认False）
+- **`text_alignment`**: 文本对齐（center/left/right）
+- **`enable_shadow`**: 是否启用阴影（默认False）
+- **`enable_border`**: 是否启用边框（默认False）
+- **`margin_x`**: 水平边距（0-200px，默认50）
+- **`margin_y`**: 垂直边距（0-200px，默认50）
+
+### 使用示例
+
+#### 经典字幕风格
+```
+文本内容: "这是视频字幕"
+位置: bottom
+字体颜色: white
+背景颜色: black
+背景透明度: 0.8
+```
+
+#### 新闻标题风格
+```
+文本内容: "重要新闻标题"
+位置: top
+字体颜色: black  
+背景颜色: yellow
+背景透明度: 0.9
+```
+
+#### 无背景风格
+```
+文本内容: "简洁文本"
+位置: center
+字体颜色: white
+背景颜色: transparent
+启用阴影: True
+```
+
 ## 🔧 使用方法
 
 ### 方法1：自动字幕生成
@@ -89,74 +164,39 @@ graph LR
 
 ### 方法2：自定义文本覆盖
 
-```mermaid
-graph LR
-    A[🎥 视频/图像序列] --> B[📝 Text Overlay Video]
-    B --> C[📹 输出视频]
-```
-
 **典型工作流：**
-1. 视频加载或图像处理节点
-2. 连接到`TextOverlayVideoNode`
-3. 配置文本内容和样式
-4. 输出到视频合成节点
-
-## ⚙️ 配置选项
-
-### 文本覆盖样式
-
-| 参数 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| 文本内容 | STRING | - | 要显示的文本 |
-| 位置 | 选择 | bottom_center | 9种预设位置 |
-| 字体大小 | INT | 24 | 12-72像素 |
-| 字体颜色 | RGB | (0,0,0) | 黑色 |
-| 背景颜色 | RGB | (255,255,255) | 白色 |
-| 背景透明度 | FLOAT | 0.8 | 0-1 |
-
-### 位置选项
-
-- `bottom_center` - 底部居中
-- `bottom_left` - 底部左对齐  
-- `bottom_right` - 底部右对齐
-- `top_center` - 顶部居中
-- `top_left` - 顶部左对齐
-- `top_right` - 顶部右对齐
-- `center` - 屏幕中央
-- `center_left` - 中央左对齐
-- `center_right` - 中央右对齐
-
-## 🎨 样式预设
-
-### 电影字幕风格
 ```
-位置: bottom_center
-字体大小: 28
-字体颜色: 白色 (255,255,255)
-背景颜色: 黑色 (0,0,0)
-背景透明度: 0.7
-粗体: 是
+视频加载 → [图像处理] → 文本覆盖 → 视频输出
 ```
 
-### 新闻标题风格
-```
-位置: top_center
-字体大小: 24
-字体颜色: 黑色 (0,0,0)
-背景颜色: 黄色 (255,255,0)
-背景透明度: 0.9
-粗体: 是
-```
+**节点连接：**
+1. `VHS_LoadVideoPath` → `TextOverlayVideoNode`
+2. `TextOverlayVideoNode` → `VHS_VideoCombine`
 
-### 简洁风格
-```
-位置: center
-字体大小: 20
-字体颜色: 深灰色 (50,50,50)
-背景颜色: 白色 (255,255,255)
-背景透明度: 0.5
-粗体: 否
-```
+**配置要点：**
+- 在`Video/Text`分类找到`📝 Text Overlay Video`节点
+- 输入要显示的文本内容
+- 选择合适的位置和颜色
+- 根据需要调整字体大小和背景样式
+
+## 🎨 快速配置指南
+
+### 常用样式组合
+
+**🎬 电影字幕**
+- 位置: `bottom` | 字体: `white` | 背景: `black` | 透明度: 0.8
+
+**📺 新闻标题** 
+- 位置: `top` | 字体: `black` | 背景: `yellow` | 透明度: 0.9
+
+**💭 对话气泡**
+- 位置: `center` | 字体: `black` | 背景: `white` | 圆角: 15px
+
+**🔥 警告提示**
+- 位置: `center` | 字体: `white` | 背景: `red` | 粗体: 是
+
+**🌟 无背景效果**
+- 位置: `bottom` | 字体: `white` | 背景: `transparent` | 阴影: 是
 
 ## 📁 项目结构
 

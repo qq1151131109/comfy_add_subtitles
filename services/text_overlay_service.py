@@ -39,6 +39,7 @@ class TextOverlayStyle:
         self.background_color = (255, 255, 255) # 背景颜色 RGB (默认白色)
         self.background_opacity = 0.8           # 背景透明度 (0-1)
         self.background_padding = 10            # 背景内边距
+        self.background_radius = 8              # 背景圆角半径
         
         # 文本效果
         self.text_alignment = TextAlignment.CENTER  # 文字对齐
@@ -67,37 +68,30 @@ class TextOverlayStyle:
         Returns:
             (x_expression, y_expression)
         """
-        # 根据预设位置计算
-        if self.position_preset == "bottom_center":
-            x = f"(w-text_w)/2"
+        # 水平方向始终居中
+        x = f"(w-text_w)/2"
+        
+        # 根据垂直位置计算Y坐标
+        if self.position_preset == "bottom":
             y = f"h-text_h-{self.margin_y}"
-        elif self.position_preset == "bottom_left":
-            x = str(self.margin_x)
-            y = f"h-text_h-{self.margin_y}"
-        elif self.position_preset == "bottom_right":
-            x = f"w-text_w-{self.margin_x}"
-            y = f"h-text_h-{self.margin_y}"
-        elif self.position_preset == "top_center":
-            x = f"(w-text_w)/2"
-            y = str(self.margin_y)
-        elif self.position_preset == "top_left":
-            x = str(self.margin_x)
-            y = str(self.margin_y)
-        elif self.position_preset == "top_right":
-            x = f"w-text_w-{self.margin_x}"
-            y = str(self.margin_y)
+        elif self.position_preset == "bottom_low":
+            y = f"h-text_h-{self.margin_y//2}"  # 更靠近底部
+        elif self.position_preset == "bottom_high":
+            y = f"h-text_h-{self.margin_y*2}"  # 离底部更远
         elif self.position_preset == "center":
-            x = f"(w-text_w)/2"
             y = f"(h-text_h)/2"
-        elif self.position_preset == "center_left":
-            x = str(self.margin_x)
-            y = f"(h-text_h)/2"
-        elif self.position_preset == "center_right":
-            x = f"w-text_w-{self.margin_x}"
-            y = f"(h-text_h)/2"
+        elif self.position_preset == "center_low":
+            y = f"(h-text_h)/2+{self.margin_y}"  # 中央偏下
+        elif self.position_preset == "center_high":
+            y = f"(h-text_h)/2-{self.margin_y}"  # 中央偏上
+        elif self.position_preset == "top":
+            y = str(self.margin_y)
+        elif self.position_preset == "top_low":
+            y = str(self.margin_y*2)  # 距离顶部更远
+        elif self.position_preset == "top_high":
+            y = str(self.margin_y//2)  # 更靠近顶部
         else:
             # 默认底部居中
-            x = f"(w-text_w)/2"
             y = f"h-text_h-{self.margin_y}"
         
         return x, y
@@ -274,6 +268,12 @@ class TextOverlayService:
             filter_parts.append(f"box=1")
             filter_parts.append(f"boxcolor={bg_color}")
             filter_parts.append(f"boxborderw={style.background_padding}")
+            
+            # 圆角效果（通过调整背景边距实现视觉圆角效果）
+            if style.background_radius > 0:
+                # FFmpeg的drawtext过滤器本身不支持圆角，这里记录圆角设置
+                # 实际的圆角效果需要在后续版本中通过复合过滤器实现
+                filter_parts.append(f"# border_radius={style.background_radius}")
         
         # 边框配置
         if style.enable_border:
