@@ -84,33 +84,33 @@ pip install -r requirements.txt
 #### 必需参数
 - **`images`**: 输入图像序列（来自视频节点）
 - **`text_content`**: 文本内容（支持多行）
-- **`position`**: 垂直位置选择（按视频高度比例）
-  - `bottom` - 底部居中（距底边5%，默认）
-  - `bottom_low` - 底部偏下（距底边2%，更靠近底边）
-  - `bottom_high` - 底部偏上（距底边10%，离底边更远）  
-  - `center` - 屏幕正中央
-  - `center_low` - 中央偏下（中央+5%）
-  - `center_high` - 中央偏上（中央-5%）
-  - `top` - 顶部居中（距顶边5%）
-  - `top_low` - 顶部偏下（距顶边10%，更往下）
-  - `top_high` - 顶部偏上（距顶边2%，更靠近顶边）
+- **`position`**: 垂直位置选择（按视频高度比例，间距更大便于区分）
+  - `底部居中` - 标准底部（距底边8%，默认）
+  - `底部偏下` - 最靠近底部（距底边3%）
+  - `底部偏上` - 底部区域上方（距底边15%）  
+  - `屏幕中央` - 屏幕正中央
+  - `中央偏下` - 中央偏下（中央+12%）
+  - `中央偏上` - 中央偏上（中央-12%）
+  - `顶部居中` - 标准顶部（距顶边8%）
+  - `顶部偏下` - 顶部区域下方（距顶边15%）
+  - `顶部偏上` - 最靠近顶部（距顶边3%）
 - **`font_size`**: 字体大小（12-72px，默认24）
 - **`font_color`**: 字体颜色预设
-  - `black`, `white`, `red`, `green`, `blue`, `yellow`
-  - `cyan`, `magenta`, `orange`, `purple`, `gray`, `darkgray`
+  - `黑色`, `白色`, `红色`, `绿色`, `蓝色`, `黄色`
+  - `青色`, `洋红`, `橙色`, `紫色`, `灰色`, `深灰`
 - **`background_color`**: 背景颜色预设
-  - `white` - 白色背景（默认）
-  - `black` - 黑色背景
-  - `transparent` - 无背景（透明）
-  - `red`, `green`, `blue`, `yellow`, `cyan`, `magenta`
-  - `orange`, `purple`, `gray`, `lightgray`
+  - `白色` - 白色背景（默认）
+  - `黑色` - 黑色背景
+  - `透明` - 无背景（透明）
+  - `红色`, `绿色`, `蓝色`, `黄色`, `青色`, `洋红`
+  - `橙色`, `紫色`, `灰色`, `浅灰`
 - **`background_opacity`**: 背景透明度（0.0=完全透明，1.0=完全不透明，默认0.8）
 - **`max_chars_per_line`**: 每行最大字符数（10-100，默认30）
 
 #### 可选参数
 - **`enable_background`**: 是否启用背景（默认True）
 - **`font_bold`**: 是否粗体（默认False）
-- **`text_alignment`**: 文本对齐（center/left/right）
+- **`text_alignment`**: 文本对齐（居中/左对齐/右对齐）
 - **`enable_shadow`**: 是否启用阴影（默认False）
 - **`enable_border`**: 是否启用边框（默认False）
 - **`margin_x`**: 水平边距（0-200px，默认50）
