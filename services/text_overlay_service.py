@@ -269,11 +269,12 @@ class TextOverlayService:
             filter_parts.append(f"boxcolor={bg_color}")
             filter_parts.append(f"boxborderw={style.background_padding}")
             
-            # 圆角效果（通过调整背景边距实现视觉圆角效果）
+            # 圆角效果（FFmpeg的drawtext过滤器本身不支持圆角）
+            # 这里暂时跳过圆角处理，后续可通过复合过滤器实现
             if style.background_radius > 0:
-                # FFmpeg的drawtext过滤器本身不支持圆角，这里记录圆角设置
+                # 暂时不添加圆角相关的FFmpeg参数
                 # 实际的圆角效果需要在后续版本中通过复合过滤器实现
-                filter_parts.append(f"# border_radius={style.background_radius}")
+                pass
         
         # 边框配置
         if style.enable_border:

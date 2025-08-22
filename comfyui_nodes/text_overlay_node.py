@@ -373,13 +373,18 @@ class TextOverlayVideoNode:
             font_rgb = self.get_color_rgb(font_color)
             background_rgb = self.get_color_rgb(background_color)
             
+            # 处理文本换行
+            wrapped_text = self.wrap_text(text_content, max_chars_per_line)
+            text_stats = self.get_text_stats(wrapped_text)
+            
             # 步骤1: 显示配置信息
             progress.log_progress("初始化配置", f"文本: '{text_content[:20]}{'...' if len(text_content) > 20 else ''}'", 10.0)
             log_messages.append(f"开始处理文本覆盖: '{text_content}'")
+            log_messages.append(f"换行后文本: {text_stats['total_lines']}行, 最长{text_stats['max_line_length']}字符")
             log_messages.append(f"位置: {position}, 字体大小: {font_size}")
             log_messages.append(f"字体颜色: {font_color} {font_rgb}")
             log_messages.append(f"背景颜色: {background_color} {background_rgb}")
-            log_messages.append(f"背景圆角: {background_radius}px")
+            log_messages.append(f"背景圆角: {background_radius}px (暂不支持)")
             
             # 创建样式配置
             style = TextOverlayStyle()
@@ -437,7 +442,7 @@ class TextOverlayVideoNode:
                 progress.log_progress("添加文本覆盖", f"使用FFmpeg处理", 70.0)
                 log_messages.append("正在添加文本覆盖...")
                 success = self.service.add_text_overlay(
-                    temp_input_path, text_content, temp_output_path, style
+                    temp_input_path, wrapped_text, temp_output_path, style
                 )
                 
                 if not success:
