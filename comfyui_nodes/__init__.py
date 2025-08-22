@@ -11,6 +11,7 @@ from .whisper_model_node import (
     WhisperCacheManagerNode
 )
 from .video_subtitle_with_model_node import VideoSubtitleWithModelNode
+from .text_overlay_node import TextOverlayVideoNode
 
 # ComfyUI节点注册
 NODE_CLASS_MAPPINGS = {
@@ -21,7 +22,10 @@ NODE_CLASS_MAPPINGS = {
     "WhisperModelNode": WhisperModelNode,
     "WhisperTranscribeNode": WhisperTranscribeNode, 
     "WhisperCacheManagerNode": WhisperCacheManagerNode,
-    "VideoSubtitleWithModelNode": VideoSubtitleWithModelNode
+    "VideoSubtitleWithModelNode": VideoSubtitleWithModelNode,
+    
+    # 文本覆盖节点
+    "TextOverlayVideoNode": TextOverlayVideoNode
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -32,7 +36,10 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "WhisperModelNode": "🤖 Whisper Model Loader",
     "WhisperTranscribeNode": "🎙️ Whisper Transcribe",
     "WhisperCacheManagerNode": "🗂️ Whisper Cache Manager", 
-    "VideoSubtitleWithModelNode": "🎬 Video Subtitle (with Model)"
+    "VideoSubtitleWithModelNode": "🎬 Video Subtitle (with Model)",
+    
+    # 文本覆盖节点
+    "TextOverlayVideoNode": "📝 Text Overlay Video"
 }
 
 __all__ = [
@@ -42,5 +49,6 @@ __all__ = [
     "WhisperModelNode",
     "WhisperTranscribeNode", 
     "WhisperCacheManagerNode",
-    "VideoSubtitleWithModelNode"
+    "VideoSubtitleWithModelNode",
+    "TextOverlayVideoNode"
 ]
