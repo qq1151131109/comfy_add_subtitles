@@ -79,7 +79,14 @@ class TextOverlayVideoNode:
     """ComfyUI文本覆盖视频节点"""
     
     def __init__(self):
-        self.service = TextOverlayService()
+        try:
+            self.service = TextOverlayService()
+            print("✅ TextOverlayService 初始化成功")
+        except Exception as e:
+            print(f"❌ TextOverlayService 初始化失败: {e}")
+            import traceback
+            print(traceback.format_exc())
+            raise
         self.setup_logging()
     
     def setup_logging(self):
@@ -454,13 +461,16 @@ class TextOverlayVideoNode:
             log_messages.append(f"位置表达式: x={x_expr}, y={y_expr}")
             
             # 步骤2: 验证样式配置
-            progress.log_progress("验证样式配置", f"位置: {position}, 大小: {font_size}px", 20.0)
+            progress.log_progress("验证样式配置", f"位置: {文本位置}, 大小: {字体大小}px", 20.0)
+            print(f"🔍 开始验证样式配置...")
             is_valid, error_msg = self.service.validate_style(style)
             if not is_valid:
                 error_message = f"❌ 样式配置错误: {error_msg}"
+                print(f"❌ 样式验证失败: {error_msg}")
                 progress.log_error(error_message)
                 log_messages.append(error_message)
                 return images, "\n".join(log_messages)
+            print(f"✅ 样式配置验证通过")
             
             # 步骤3: 准备临时文件
             progress.log_progress("准备临时文件", "创建输入输出文件", 30.0)
@@ -478,13 +488,18 @@ class TextOverlayVideoNode:
             
             try:
                 # 步骤4: 转换图像序列为视频
+                print(f"🎬 开始转换图像序列为视频...")
+                print(f"📊 输入图像数量: {len(images)}")
+                print(f"📁 临时文件路径: {temp_input_path}")
                 progress.log_progress("转换图像序列", f"临时文件: {os.path.basename(temp_input_path)}", 40.0)
                 success = self._images_to_video(images, temp_input_path)
                 if not success:
                     error_message = "❌ 图像序列转换为视频失败"
+                    print(f"❌ 图像序列转换失败")
                     progress.log_error(error_message)
                     log_messages.append(error_message)
                     return images, "\n".join(log_messages)
+                print(f"✅ 图像序列转换成功")
                 
                 progress.log_progress("图像序列转换完成", "准备添加文本覆盖", 60.0)
                 log_messages.append("✅ 图像序列转换完成")
@@ -531,8 +546,12 @@ class TextOverlayVideoNode:
                     pass
                 
         except Exception as e:
+            import traceback
             error_msg = f"❌ 处理过程中发生错误: {str(e)}"
+            traceback_str = traceback.format_exc()
+            print(f"错误详情:\n{traceback_str}")
             log_messages.append(error_msg)
+            log_messages.append(f"错误详情: {traceback_str}")
             return images, "\n".join(log_messages)
     
     def _images_to_video(self, images, output_path: str) -> bool:
