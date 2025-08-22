@@ -373,6 +373,7 @@ class TextOverlayVideoNode:
             log_messages.append(f"开始处理文本覆盖: '{text_content}'")
             log_messages.append(f"换行后文本: {text_stats['total_lines']}行, 最长{text_stats['max_line_length']}字符")
             log_messages.append(f"位置: {position}, 字体大小: {font_size}")
+            log_messages.append(f"边距设置: margin_y={margin_y}px")
             log_messages.append(f"字体颜色: {font_color} {font_rgb}")
             log_messages.append(f"背景颜色: {background_color} {background_rgb}")
             log_messages.append(f"背景透明度: {background_opacity}")
@@ -391,6 +392,10 @@ class TextOverlayVideoNode:
             style.enable_border = enable_border
             style.margin_x = margin_x
             style.margin_y = margin_y
+            
+            # 显示位置计算详情（用于调试）
+            x_expr, y_expr = style.get_position_expression(1920, 1080)  # 使用标准分辨率计算示例
+            log_messages.append(f"位置表达式: x={x_expr}, y={y_expr}")
             
             # 步骤2: 验证样式配置
             progress.log_progress("验证样式配置", f"位置: {position}, 大小: {font_size}px", 20.0)

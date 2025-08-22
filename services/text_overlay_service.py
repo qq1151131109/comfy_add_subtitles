@@ -70,13 +70,13 @@ class TextOverlayStyle:
         # 水平方向始终居中
         x = f"(w-text_w)/2"
         
-        # 根据垂直位置计算Y坐标
+        # 根据垂直位置计算Y坐标（使用固定间距确保差异明显）
         if self.position_preset == "bottom":
             y = f"h-text_h-{self.margin_y}"
         elif self.position_preset == "bottom_low":
-            y = f"h-text_h-{self.margin_y//2}"  # 更靠近底部
+            y = f"h-text_h-{max(10, self.margin_y // 2)}"  # 更靠近底部，最少10px
         elif self.position_preset == "bottom_high":
-            y = f"h-text_h-{self.margin_y*2}"  # 离底部更远
+            y = f"h-text_h-{self.margin_y * 2}"  # 离底部更远
         elif self.position_preset == "center":
             y = f"(h-text_h)/2"
         elif self.position_preset == "center_low":
@@ -86,9 +86,9 @@ class TextOverlayStyle:
         elif self.position_preset == "top":
             y = str(self.margin_y)
         elif self.position_preset == "top_low":
-            y = str(self.margin_y*2)  # 距离顶部更远
+            y = str(self.margin_y * 2)  # 距离顶部更远（更往下）
         elif self.position_preset == "top_high":
-            y = str(self.margin_y//2)  # 更靠近顶部
+            y = str(max(5, self.margin_y // 2))  # 更靠近顶部（更往上），最少5px
         else:
             # 默认底部居中
             y = f"h-text_h-{self.margin_y}"

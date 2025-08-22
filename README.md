@@ -85,15 +85,15 @@ pip install -r requirements.txt
 - **`images`**: 输入图像序列（来自视频节点）
 - **`text_content`**: 文本内容（支持多行）
 - **`position`**: 垂直位置选择
-  - `bottom` - 底部居中（默认）
-  - `bottom_low` - 底部偏下
-  - `bottom_high` - 底部偏上  
-  - `center` - 屏幕中央
-  - `center_low` - 中央偏下
-  - `center_high` - 中央偏上
-  - `top` - 顶部居中
-  - `top_low` - 顶部偏下
-  - `top_high` - 顶部偏上
+  - `bottom` - 底部居中（距底边50px，默认）
+  - `bottom_low` - 底部偏下（距底边25px，更靠近底边）
+  - `bottom_high` - 底部偏上（距底边100px，离底边更远）  
+  - `center` - 屏幕正中央
+  - `center_low` - 中央偏下（中央+50px）
+  - `center_high` - 中央偏上（中央-50px）
+  - `top` - 顶部居中（距顶边50px）
+  - `top_low` - 顶部偏下（距顶边100px，更往下）
+  - `top_high` - 顶部偏上（距顶边25px，更靠近顶边）
 - **`font_size`**: 字体大小（12-72px，默认24）
 - **`font_color`**: 字体颜色预设
   - `black`, `white`, `red`, `green`, `blue`, `yellow`
