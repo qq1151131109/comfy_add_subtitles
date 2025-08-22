@@ -264,13 +264,6 @@ class TextOverlayVideoNode:
                     "step": 0.1,
                     "tooltip": "背景透明度（0=完全透明，1=完全不透明）"
                 }),
-                "background_radius": ("INT", {
-                    "default": 8,
-                    "min": 0,
-                    "max": 50,
-                    "step": 1,
-                    "tooltip": "背景圆角半径（像素）"
-                }),
                 "max_chars_per_line": ("INT", {
                     "default": 30,
                     "min": 10,
@@ -329,8 +322,7 @@ class TextOverlayVideoNode:
     
     def process_text_overlay(self, images, text_content: str, position: str, 
                            font_size: int, font_color: str, background_color: str,
-                           background_opacity: float, background_radius: int, 
-                           max_chars_per_line: int, **kwargs) -> Tuple[Any, str]:
+                           background_opacity: float, max_chars_per_line: int, **kwargs) -> Tuple[Any, str]:
         """
         处理文本覆盖
         
@@ -342,7 +334,6 @@ class TextOverlayVideoNode:
             font_color: 字体颜色预设
             background_color: 背景颜色预设
             background_opacity: 背景透明度
-            background_radius: 背景圆角半径
             max_chars_per_line: 每行最大字符数
             **kwargs: 其他可选参数
             
@@ -384,7 +375,7 @@ class TextOverlayVideoNode:
             log_messages.append(f"位置: {position}, 字体大小: {font_size}")
             log_messages.append(f"字体颜色: {font_color} {font_rgb}")
             log_messages.append(f"背景颜色: {background_color} {background_rgb}")
-            log_messages.append(f"背景圆角: {background_radius}px (暂不支持)")
+            log_messages.append(f"背景透明度: {background_opacity}")
             
             # 创建样式配置
             style = TextOverlayStyle()
@@ -394,7 +385,6 @@ class TextOverlayVideoNode:
             style.background_color = background_rgb
             style.background_opacity = background_opacity if background_color != "transparent" else 0.0
             style.background_enabled = enable_background and background_color != "transparent"
-            style.background_radius = background_radius
             style.font_bold = font_bold
             style.text_alignment = text_alignment
             style.enable_shadow = enable_shadow

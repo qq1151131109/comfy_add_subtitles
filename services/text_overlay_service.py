@@ -39,7 +39,6 @@ class TextOverlayStyle:
         self.background_color = (255, 255, 255) # 背景颜色 RGB (默认白色)
         self.background_opacity = 0.8           # 背景透明度 (0-1)
         self.background_padding = 10            # 背景内边距
-        self.background_radius = 8              # 背景圆角半径
         
         # 文本效果
         self.text_alignment = TextAlignment.CENTER  # 文字对齐
@@ -268,13 +267,6 @@ class TextOverlayService:
             filter_parts.append(f"box=1")
             filter_parts.append(f"boxcolor={bg_color}")
             filter_parts.append(f"boxborderw={style.background_padding}")
-            
-            # 圆角效果（FFmpeg的drawtext过滤器本身不支持圆角）
-            # 这里暂时跳过圆角处理，后续可通过复合过滤器实现
-            if style.background_radius > 0:
-                # 暂时不添加圆角相关的FFmpeg参数
-                # 实际的圆角效果需要在后续版本中通过复合过滤器实现
-                pass
         
         # 边框配置
         if style.enable_border:
