@@ -70,28 +70,28 @@ class TextOverlayStyle:
         # 水平方向始终居中
         x = f"(w-text_w)/2"
         
-        # 根据垂直位置计算Y坐标（使用固定间距确保差异明显）
+        # 根据垂直位置计算Y坐标（使用视频高度比例确保不同分辨率下效果一致）
         if self.position_preset == "bottom":
-            y = f"h-text_h-{self.margin_y}"
+            y = f"h-text_h-h*0.05"  # 距底部5%
         elif self.position_preset == "bottom_low":
-            y = f"h-text_h-{max(10, self.margin_y // 2)}"  # 更靠近底部，最少10px
+            y = f"h-text_h-h*0.02"  # 距底部2%（更靠近底部）
         elif self.position_preset == "bottom_high":
-            y = f"h-text_h-{self.margin_y * 2}"  # 离底部更远
+            y = f"h-text_h-h*0.10"  # 距底部10%（离底部更远）
         elif self.position_preset == "center":
             y = f"(h-text_h)/2"
         elif self.position_preset == "center_low":
-            y = f"(h-text_h)/2+{self.margin_y}"  # 中央偏下
+            y = f"(h-text_h)/2+h*0.05"  # 中央偏下5%
         elif self.position_preset == "center_high":
-            y = f"(h-text_h)/2-{self.margin_y}"  # 中央偏上
+            y = f"(h-text_h)/2-h*0.05"  # 中央偏上5%
         elif self.position_preset == "top":
-            y = str(self.margin_y)
+            y = f"h*0.05"  # 距顶部5%
         elif self.position_preset == "top_low":
-            y = str(self.margin_y * 2)  # 距离顶部更远（更往下）
+            y = f"h*0.10"  # 距顶部10%（更往下）
         elif self.position_preset == "top_high":
-            y = str(max(5, self.margin_y // 2))  # 更靠近顶部（更往上），最少5px
+            y = f"h*0.02"  # 距顶部2%（更靠近顶部）
         else:
             # 默认底部居中
-            y = f"h-text_h-{self.margin_y}"
+            y = f"h-text_h-h*0.05"
         
         return x, y
 

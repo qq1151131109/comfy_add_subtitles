@@ -373,7 +373,7 @@ class TextOverlayVideoNode:
             log_messages.append(f"开始处理文本覆盖: '{text_content}'")
             log_messages.append(f"换行后文本: {text_stats['total_lines']}行, 最长{text_stats['max_line_length']}字符")
             log_messages.append(f"位置: {position}, 字体大小: {font_size}")
-            log_messages.append(f"边距设置: margin_y={margin_y}px")
+            log_messages.append(f"位置计算: 按视频高度比例自适应")
             log_messages.append(f"字体颜色: {font_color} {font_rgb}")
             log_messages.append(f"背景颜色: {background_color} {background_rgb}")
             log_messages.append(f"背景透明度: {background_opacity}")
