@@ -9,6 +9,11 @@ import subprocess
 from typing import Optional, Tuple, Dict, Any
 from pathlib import Path
 
+try:
+    from .font_manager import get_font_manager
+except ImportError:
+    from font_manager import get_font_manager
+
 logger = logging.getLogger(__name__)
 
 
@@ -26,7 +31,6 @@ class TextOverlayStyle:
         # 位置配置
         self.position_preset = "bottom_center"  # 预设位置
         self.margin_x = 50                      # 边距X
-        self.margin_y = 50                      # 边距Y
         
         # 字体配置
         self.font_family = "Arial"              # 字体族
@@ -52,6 +56,9 @@ class TextOverlayStyle:
         self.border_color = (0, 0, 0)          # 边框颜色
         self.border_width = 1                   # 边框宽度
         
+        # 文本排版配置
+        self.line_spacing = 4                   # 行间距（像素）
+        
         # 时间配置 - 默认覆盖整个视频
         self.start_time = 0.0                   # 开始时间(秒) 
         self.end_time = None                    # 结束时间(秒), None表示到视频结束
@@ -67,31 +74,49 @@ class TextOverlayStyle:
         Returns:
             (x_expression, y_expression)
         """
-        # 水平方向始终居中
-        x = f"(w-text_w)/2"
+        # 水平方向位置计算，考虑水平边距和文本对齐
+        if hasattr(self, 'text_alignment'):
+            if self.text_alignment == TextAlignment.LEFT:
+                # 左对齐
+                x = str(self.margin_x) if self.margin_x > 0 else "0"
+            elif self.text_alignment == TextAlignment.RIGHT:
+                # 右对齐
+                x = f"w-text_w-{self.margin_x}" if self.margin_x > 0 else "w-text_w"
+            else:
+                # 居中对齐 (默认)
+                if self.margin_x > 0:
+                    x = f"(w-text_w-{self.margin_x*2})/2+{self.margin_x}"
+                else:
+                    x = f"(w-text_w)/2"
+        else:
+            # 默认居中对齐
+            if self.margin_x > 0:
+                x = f"(w-text_w-{self.margin_x*2})/2+{self.margin_x}"
+            else:
+                x = f"(w-text_w)/2"
         
-        # 根据垂直位置计算Y坐标（使用更大比例间距，确保不同分辨率下效果明显区分）
+        # 根据垂直位置计算Y坐标，使用视频高度比例
         if self.position_preset == "bottom":
-            y = f"h-text_h-h*0.08"  # 距底部8%（标准底部）
+            y = f"h-text_h-h*0.05"  # 距底部5%高度
         elif self.position_preset == "bottom_low":
-            y = f"h-text_h-h*0.03"  # 距底部3%（最靠近底部）
+            y = f"h-text_h-h*0.03"  # 距底部3%高度（更靠近底部）
         elif self.position_preset == "bottom_high":
-            y = f"h-text_h-h*0.15"  # 距底部15%（底部偏上）
+            y = f"h-text_h-h*0.08"  # 距底部8%高度（距底部更远）
         elif self.position_preset == "center":
             y = f"(h-text_h)/2"  # 正中央
         elif self.position_preset == "center_low":
-            y = f"(h-text_h)/2+h*0.12"  # 中央偏下12%
+            y = f"(h-text_h)/2+h*0.05"  # 中央向下偏移5%高度
         elif self.position_preset == "center_high":
-            y = f"(h-text_h)/2-h*0.12"  # 中央偏上12%
+            y = f"(h-text_h)/2-h*0.05"  # 中央向上偏移5%高度
         elif self.position_preset == "top":
-            y = f"h*0.08"  # 距顶部8%（标准顶部）
+            y = f"h*0.08"  # 距顶部8%高度（合适的顶部位置）
         elif self.position_preset == "top_low":
-            y = f"h*0.15"  # 距顶部15%（顶部偏下）
+            y = f"h*0.15"  # 距顶部15%高度（顶部偏下）
         elif self.position_preset == "top_high":
-            y = f"h*0.03"  # 距顶部3%（最靠近顶部）
+            y = f"h*0.03"  # 距顶部3%高度（顶部偏上）
         else:
             # 默认底部居中
-            y = f"h-text_h-h*0.08"
+            y = f"h-text_h-h*0.05"
         
         return x, y
 
@@ -101,6 +126,7 @@ class TextOverlayService:
     
     def __init__(self):
         self.logger = logging.getLogger(__name__)
+        self.font_manager = get_font_manager()
     
     def add_text_overlay(self, 
                         video_path: str,
@@ -246,8 +272,20 @@ class TextOverlayService:
         escaped_text = text_content.replace(':', '\\:').replace("'", "\\'")
         filter_parts.append(f"text='{escaped_text}'")
         
-        # 字体配置
-        filter_parts.append(f"fontfile={self._get_font_path(style.font_family)}")
+        # 字体配置 - 使用新的字体管理器
+        # 如果字体名称包含语种标签，先提取原始字体名称
+        font_name = style.font_family
+        if font_name.startswith('[') and '] ' in font_name:
+            font_name = self.font_manager.extract_font_name_from_label(font_name)
+            
+        # 根据粗体设置选择字体路径
+        if style.font_bold:
+            font_path = self.font_manager.get_font_path(font_name, weight='bold')
+        else:
+            font_path = self.font_manager.get_font_path(font_name, weight='regular')
+            
+        self.logger.info(f"使用字体: {style.font_family} -> {font_name} -> {font_path} (bold={style.font_bold})")
+        filter_parts.append(f"fontfile={font_path}")
         filter_parts.append(f"fontsize={style.font_size}")
         
         # 字体颜色
@@ -258,6 +296,17 @@ class TextOverlayService:
         x_expr, y_expr = style.get_position_expression(video_width, video_height)
         filter_parts.append(f"x={x_expr}")
         filter_parts.append(f"y={y_expr}")
+        
+        # 文本对齐配置
+        # 注意：FFmpeg 5.1.6的drawtext滤镜不支持alignment参数
+        # 对齐效果通过调整x位置表达式来实现
+        if hasattr(style, 'text_alignment') and style.text_alignment:
+            # 文本对齐会在位置计算中处理，这里不添加alignment参数
+            pass
+        
+        # 行间距配置
+        if hasattr(style, 'line_spacing') and style.line_spacing >= 0:
+            filter_parts.append(f"line_spacing={style.line_spacing}")  # 用户可调行间距
         
         # 背景配置
         if style.background_enabled:
@@ -295,110 +344,38 @@ class TextOverlayService:
         
         return cmd
     
-    def _get_font_path(self, font_family: str) -> str:
+    def get_available_fonts(self) -> list:
         """
-        获取字体文件路径
+        获取系统可用字体列表
+        
+        Returns:
+            可用字体列表
+        """
+        return self.font_manager.get_available_fonts()
+    
+    def validate_font(self, font_family: str) -> bool:
+        """
+        验证字体是否可用
         
         Args:
             font_family: 字体族名称
             
         Returns:
-            字体文件路径
+            字体是否可用
         """
-        # 常见系统字体路径映射
-        font_paths = {
-            # Sans-serif fonts
-            "Arial": [
-                "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
-                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-                "/System/Library/Fonts/Arial.ttf",  # macOS
-                "/Windows/Fonts/arial.ttf"  # Windows
-            ],
-            "Helvetica": [
-                "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
-                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-                "/System/Library/Fonts/Helvetica.ttc",  # macOS
-                "/Windows/Fonts/arial.ttf"  # Windows fallback
-            ],
-            "Verdana": [
-                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-                "/System/Library/Fonts/Verdana.ttf",  # macOS
-                "/Windows/Fonts/verdana.ttf",  # Windows
-                "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"
-            ],
-            "Trebuchet MS": [
-                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-                "/System/Library/Fonts/Trebuchet MS.ttf",  # macOS
-                "/Windows/Fonts/trebuc.ttf",  # Windows
-                "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"
-            ],
-            # Serif fonts
-            "Times New Roman": [
-                "/usr/share/fonts/truetype/liberation/LiberationSerif-Regular.ttf",
-                "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf",
-                "/System/Library/Fonts/Times.ttc",  # macOS
-                "/Windows/Fonts/times.ttf"  # Windows
-            ],
-            "Georgia": [
-                "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf",
-                "/System/Library/Fonts/Georgia.ttf",  # macOS
-                "/Windows/Fonts/georgia.ttf",  # Windows
-                "/usr/share/fonts/truetype/liberation/LiberationSerif-Regular.ttf"
-            ],
-            "Palatino": [
-                "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf",
-                "/System/Library/Fonts/Palatino.ttc",  # macOS
-                "/Windows/Fonts/pala.ttf",  # Windows
-                "/usr/share/fonts/truetype/liberation/LiberationSerif-Regular.ttf"
-            ],
-            # Monospace fonts
-            "Courier New": [
-                "/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf",
-                "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
-                "/System/Library/Fonts/Courier New.ttf",  # macOS
-                "/Windows/Fonts/cour.ttf"  # Windows
-            ],
-            # Display fonts
-            "Impact": [
-                "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-                "/System/Library/Fonts/Impact.ttf",  # macOS
-                "/Windows/Fonts/impact.ttf",  # Windows
-                "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"
-            ],
-            "Comic Sans MS": [
-                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-                "/System/Library/Fonts/Comic Sans MS.ttf",  # macOS
-                "/Windows/Fonts/comic.ttf",  # Windows
-                "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"
-            ]
-        }
+        return self.font_manager.validate_font(font_family)
+    
+    def get_font_info(self, font_family: str) -> dict:
+        """
+        获取字体信息
         
-        # 首先尝试指定字体的多个路径
-        if font_family in font_paths:
-            for font_path in font_paths[font_family]:
-                if os.path.exists(font_path):
-                    return font_path
-        
-        # 尝试查找中文字体
-        chinese_fonts = [
-            "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc",
-            "/usr/share/fonts/truetype/arphic/uming.ttc",
-            "/System/Library/Fonts/PingFang.ttc",  # macOS
-            "/Windows/Fonts/simhei.ttf",  # Windows
-        ]
-        
-        for font_path in chinese_fonts:
-            if os.path.exists(font_path):
-                return font_path
-        
-        # 默认使用Arial的第一个可用路径
-        default_fonts = font_paths.get("Arial", ["/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"])
-        for font_path in default_fonts:
-            if os.path.exists(font_path):
-                return font_path
-        
-        # 最后的后备方案
-        return "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"
+        Args:
+            font_family: 字体族名称
+            
+        Returns:
+            字体信息字典
+        """
+        return self.font_manager.get_font_info(font_family)
     
     def validate_style(self, style: TextOverlayStyle) -> Tuple[bool, str]:
         """

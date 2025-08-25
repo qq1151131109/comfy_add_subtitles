@@ -82,12 +82,50 @@ class TextOverlayVideoNode:
         try:
             self.service = TextOverlayService()
             print("✅ TextOverlayService 初始化成功")
+            
+            # 初始化字体列表
+            self._available_fonts = None
+            self._load_available_fonts()
+            
         except Exception as e:
             print(f"❌ TextOverlayService 初始化失败: {e}")
             import traceback
             print(traceback.format_exc())
             raise
         self.setup_logging()
+    
+    def _load_available_fonts(self):
+        """加载系统可用字体"""
+        try:
+            fonts = self.service.get_available_fonts()
+            if fonts and len(fonts) > 0:
+                self._available_fonts = fonts
+                print(f"✅ 成功检测到 {len(fonts)} 种可用字体")
+                # 显示前10个字体作为示例
+                print("📝 可用字体示例:", fonts[:10])
+            else:
+                print("⚠️ 未检测到系统字体，使用默认字体列表")
+                self._available_fonts = self._get_fallback_fonts()
+        except Exception as e:
+            print(f"⚠️ 检测系统字体时出错: {e}")
+            self._available_fonts = self._get_fallback_fonts()
+    
+    def _get_fallback_fonts(self):
+        """获取备用字体列表"""
+        return [
+            "DejaVu Sans",
+            "DejaVu Serif", 
+            "DejaVu Sans Mono",
+            "Liberation Sans",
+            "Liberation Serif",
+            "Liberation Mono",
+            "WenQuanYi Zen Hei",
+            "Lato",
+            "Noto Sans",
+            "Arial",
+            "Times New Roman",
+            "Courier New"
+        ]
     
     def setup_logging(self):
         """设置日志配置"""
@@ -231,6 +269,45 @@ class TextOverlayVideoNode:
         
         return '\n'.join(wrapped_lines)
     
+    @classmethod
+    def _get_font_options(cls) -> list:
+        """获取带语种标注的字体选项列表"""
+        try:
+            # 创建临时服务实例来获取字体
+            service = TextOverlayService()
+            labeled_fonts = service.font_manager.get_fonts_with_language_labels()
+            if labeled_fonts and len(labeled_fonts) > 0:
+                return labeled_fonts
+        except Exception as e:
+            print(f"获取字体列表时出错: {e}")
+        
+        # 返回备用带标签字体列表
+        return [
+            "[EN] DejaVu Sans",
+            "[EN] DejaVu Serif", 
+            "[EN] DejaVu Sans Mono",
+            "[EN] Liberation Sans",
+            "[EN] Liberation Serif",
+            "[EN] Liberation Mono",
+            "[CN] WenQuanYi Zen Hei",
+            "[EN] Lato",
+            "[EN] Noto Sans"
+        ]
+    
+    @classmethod
+    def _get_default_font(cls) -> str:
+        """获取默认字体"""
+        fonts = cls._get_font_options()
+        if fonts:
+            # 优先选择常见的英文无衬线字体（带标签版本）
+            preferred_patterns = ["[EN] DejaVu Sans", "[EN] Liberation Sans", "[EN] Arial", "[EN] Lato"]
+            for pattern in preferred_patterns:
+                for font in fonts:
+                    if pattern in font:
+                        return font
+            return fonts[0]  # 返回第一个可用字体
+        return "[EN] DejaVu Sans"  # 最后的备用
+    
     def get_text_stats(self, text: str) -> dict:
         """
         获取文本统计信息
@@ -276,20 +353,9 @@ class TextOverlayVideoNode:
                     "default": "底部居中",
                     "tooltip": "文本在视频中的垂直位置（水平方向始终居中）"
                 }),
-                "字体类型": ([
-                    "Arial",              # Sans-serif
-                    "Times New Roman",    # Serif
-                    "Courier New",        # Monospace
-                    "Helvetica",          # Sans-serif
-                    "Georgia",            # Serif
-                    "Verdana",            # Sans-serif
-                    "Impact",             # Display
-                    "Comic Sans MS",      # Casual
-                    "Trebuchet MS",       # Sans-serif
-                    "Palatino"            # Serif
-                ], {
-                    "default": "Arial",
-                    "tooltip": "字体类型选择"
+                "字体类型": (cls._get_font_options(), {
+                    "default": cls._get_default_font(),
+                    "tooltip": "字体类型选择（基于系统实际可用字体）"
                 }),
                 "字体大小": ("INT", {
                     "default": 24,
@@ -380,12 +446,12 @@ class TextOverlayVideoNode:
                     "step": 5,
                     "tooltip": "水平边距（像素）"
                 }),
-                "垂直边距": ("INT", {
-                    "default": 50,
+                "行间距": ("INT", {
+                    "default": 4,
                     "min": 0,
-                    "max": 200,
-                    "step": 5,
-                    "tooltip": "垂直边距（像素）"
+                    "max": 20,
+                    "step": 1,
+                    "tooltip": "多行文本的行间距（像素）"
                 })
             }
         }
@@ -433,7 +499,7 @@ class TextOverlayVideoNode:
             enable_shadow = kwargs.get("启用阴影", False)
             enable_border = kwargs.get("启用边框", False)
             margin_x = kwargs.get("水平边距", 50)
-            margin_y = kwargs.get("垂直边距", 50)
+            line_spacing = kwargs.get("行间距", 4)
             
             log_messages = []
             
@@ -471,7 +537,7 @@ class TextOverlayVideoNode:
             style.enable_shadow = enable_shadow
             style.enable_border = enable_border
             style.margin_x = margin_x
-            style.margin_y = margin_y
+            style.line_spacing = line_spacing
             
             # 显示位置计算详情（用于调试）
             x_expr, y_expr = style.get_position_expression(1920, 1080)  # 使用标准分辨率计算示例
