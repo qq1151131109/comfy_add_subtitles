@@ -8,7 +8,7 @@ import sys
 import logging
 import tempfile
 import time
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, Optional
 from datetime import datetime
 
 # 添加父目录到Python路径以支持导入
@@ -17,9 +17,11 @@ parent_dir = os.path.dirname(current_dir)
 sys.path.append(parent_dir)
 
 try:
-    from ..services.text_overlay_service import TextOverlayService, TextOverlayStyle, TextAlignment
+    from ..services.text_overlay_service import TextOverlayService, TextOverlayStyle, TextAlignment, TextEffectType
+    from ..core.subtitle_style import PresetStyles, SubtitleStyle, SubtitlePosition, FontWeight
 except ImportError:
-    from services.text_overlay_service import TextOverlayService, TextOverlayStyle, TextAlignment
+    from services.text_overlay_service import TextOverlayService, TextOverlayStyle, TextAlignment, TextEffectType
+    from core.subtitle_style import PresetStyles, SubtitleStyle, SubtitlePosition, FontWeight
 
 
 class ProgressLogger:
@@ -211,6 +213,106 @@ class TextOverlayVideoNode:
         }
         return alignment_map.get(alignment_name, "center")
     
+    def get_tiktok_preset_style(self, preset_name: str) -> Optional[SubtitleStyle]:
+        """获取TikTok预设样式"""
+        preset_map = {
+            "🔥 TikTok经典": PresetStyles.tiktok_classic,
+            "✨ TikTok霓虹": PresetStyles.tiktok_neon,
+            "💪 TikTok粗体": PresetStyles.tiktok_bold,
+            "🌈 TikTok彩色": PresetStyles.tiktok_colorful,
+            "🌟 TikTok简约": PresetStyles.tiktok_minimal,
+            "📖 TikTok故事": PresetStyles.tiktok_story,
+            "💃 TikTok舞蹈": PresetStyles.tiktok_dance,
+            "💎 TikTok奢华": PresetStyles.tiktok_luxury
+        }
+        
+        if preset_name in preset_map:
+            return preset_map[preset_name]()
+        return None
+    
+    def convert_subtitle_style_to_overlay_style(self, subtitle_style: SubtitleStyle) -> TextOverlayStyle:
+        """将SubtitleStyle转换为TextOverlayStyle"""
+        overlay_style = TextOverlayStyle()
+        
+        # 位置映射
+        position_map = {
+            SubtitlePosition.BOTTOM_CENTER: "bottom",
+            SubtitlePosition.BOTTOM_LEFT: "bottom",
+            SubtitlePosition.BOTTOM_RIGHT: "bottom", 
+            SubtitlePosition.TOP_CENTER: "top",
+            SubtitlePosition.TOP_LEFT: "top",
+            SubtitlePosition.TOP_RIGHT: "top",
+            SubtitlePosition.CENTER: "center",
+            SubtitlePosition.CUSTOM: "center"
+        }
+        
+        overlay_style.position_preset = position_map.get(subtitle_style.position, "bottom")
+        overlay_style.margin_x = subtitle_style.margin_x
+        
+        # 字体设置
+        overlay_style.font_family = subtitle_style.font_family
+        overlay_style.font_size = subtitle_style.font_size
+        overlay_style.font_color = subtitle_style.font_color
+        overlay_style.font_bold = (subtitle_style.font_weight == FontWeight.BOLD)
+        
+        # 背景设置
+        overlay_style.background_enabled = subtitle_style.background_enabled
+        if len(subtitle_style.background_color) == 4:  # RGBA
+            overlay_style.background_color = subtitle_style.background_color[:3]
+            overlay_style.background_opacity = subtitle_style.background_color[3] / 255.0
+        else:  # RGB
+            overlay_style.background_color = subtitle_style.background_color
+            overlay_style.background_opacity = 0.8
+        overlay_style.background_padding = subtitle_style.background_padding
+        
+        # 阴影设置
+        overlay_style.enable_shadow = subtitle_style.shadow_enabled
+        overlay_style.shadow_color = subtitle_style.shadow_color
+        overlay_style.shadow_offset_x = subtitle_style.shadow_offset_x
+        overlay_style.shadow_offset_y = subtitle_style.shadow_offset_y
+        
+        # 边框设置
+        overlay_style.enable_border = (subtitle_style.outline_width > 0)
+        overlay_style.border_color = subtitle_style.outline_color
+        overlay_style.border_width = subtitle_style.outline_width
+        
+        # 文本排版
+        overlay_style.line_spacing = int(subtitle_style.line_spacing * 5)  # 转换为像素值
+        
+        return overlay_style
+    
+    def apply_visual_effect(self, style: TextOverlayStyle, effect_name: str) -> None:
+        """应用视觉效果到样式"""
+        if effect_name == "🌟 发光效果":
+            style.glow_enabled = True
+            style.glow_color = (255, 255, 255)
+            style.glow_intensity = 8
+            style.glow_spread = 2
+            
+        elif effect_name == "🎯 双重描边":
+            style.double_outline_enabled = True
+            style.outline_inner_width = 2
+            style.outline_inner_color = (255, 255, 255)
+            style.outline_outer_width = 5
+            style.outline_outer_color = (0, 0, 0)
+            
+        elif effect_name == "💫 霓虹效果":
+            style.neon_enabled = True
+            style.neon_base_color = (255, 20, 147)  # 霓虹粉
+            style.neon_glow_layers = 3
+            style.neon_intensity = 10
+            
+        elif effect_name == "📦 3D立体阴影":
+            style.shadow_3d_enabled = True
+            style.shadow_3d_layers = 5
+            style.shadow_3d_depth = 3
+            style.shadow_3d_angle = 225
+            
+        elif effect_name == "⚡ 故障效果":
+            style.glitch_enabled = True
+            style.glitch_displacement = 3
+            style.glitch_color_shift = True
+    
     def wrap_text(self, text: str, max_chars_per_line: int) -> str:
         """
         文本自动换行处理
@@ -339,6 +441,20 @@ class TextOverlayVideoNode:
                     "multiline": True,
                     "placeholder": "要显示在视频上的文本"
                 }),
+                "TikTok预设": ([
+                    "不使用预设",
+                    "🔥 TikTok经典",
+                    "✨ TikTok霓虹", 
+                    "💪 TikTok粗体",
+                    "🌈 TikTok彩色",
+                    "🌟 TikTok简约",
+                    "📖 TikTok故事",
+                    "💃 TikTok舞蹈",
+                    "💎 TikTok奢华"
+                ], {
+                    "default": "不使用预设",
+                    "tooltip": "选择专门为TikTok优化的预设样式，将自动覆盖其他样式设置"
+                }),
                 "文本位置": ([
                     "底部居中",          # bottom
                     "底部偏下",          # bottom_low
@@ -452,6 +568,17 @@ class TextOverlayVideoNode:
                     "max": 20,
                     "step": 1,
                     "tooltip": "多行文本的行间距（像素）"
+                }),
+                "视觉效果": ([
+                    "无效果",
+                    "🌟 发光效果",
+                    "🎯 双重描边",
+                    "💫 霓虹效果",
+                    "📦 3D立体阴影",
+                    "⚡ 故障效果"
+                ], {
+                    "default": "无效果",
+                    "tooltip": "选择高级视觉特效（将覆盖基础边框和阴影设置）"
                 })
             }
         }
@@ -462,9 +589,9 @@ class TextOverlayVideoNode:
     CATEGORY = "Video/Text"
     OUTPUT_NODE = False
     
-    def process_text_overlay(self, images, 文本内容: str, 文本位置: str, 
+    def process_text_overlay(self, images, 文本内容: str, TikTok预设: str, 文本位置: str, 
                            字体类型: str, 字体大小: int, 字体颜色: str, 背景颜色: str,
-                           背景透明度: float, 每行字符数: int, **kwargs) -> Tuple[Any, str]:
+                           背景透明度: float, 每行字符数: int, 视觉效果: str, **kwargs) -> Tuple[Any, str]:
         """
         处理文本覆盖
         
@@ -503,48 +630,74 @@ class TextOverlayVideoNode:
             
             log_messages = []
             
-            # 转换中文选项为内部使用的英文值
-            position_en = self.get_position_preset(文本位置)
-            font_rgb = self.get_color_rgb(字体颜色)
-            background_rgb = self.get_color_rgb(背景颜色)
-            text_alignment = self.get_text_alignment(text_alignment_cn)
+            # 检查是否使用TikTok预设
+            if TikTok预设 != "不使用预设":
+                # 使用TikTok预设样式
+                progress.log_progress("应用TikTok预设", f"预设样式: {TikTok预设}", 15.0)
+                log_messages.append(f"🎯 使用TikTok预设: {TikTok预设}")
+                
+                tiktok_style = self.get_tiktok_preset_style(TikTok预设)
+                if tiktok_style:
+                    style = self.convert_subtitle_style_to_overlay_style(tiktok_style)
+                    log_messages.append(f"✅ 成功应用{TikTok预设}样式配置")
+                    log_messages.append(f"📝 预设参数: 字体大小{tiktok_style.font_size}px, 描边{tiktok_style.outline_width}px")
+                else:
+                    log_messages.append(f"❌ 未找到预设样式: {TikTok预设}")
+                    return images, "\n".join(log_messages)
+            else:
+                # 使用手动配置的样式
+                progress.log_progress("手动配置样式", f"字体: {字体类型}, 大小: {字体大小}px", 15.0)
+                log_messages.append(f"🔧 使用手动配置的样式")
+                
+                # 转换中文选项为内部使用的英文值
+                position_en = self.get_position_preset(文本位置)
+                font_rgb = self.get_color_rgb(字体颜色)
+                background_rgb = self.get_color_rgb(背景颜色)
+                text_alignment = self.get_text_alignment(text_alignment_cn)
+                
+                # 创建样式配置
+                style = TextOverlayStyle()
+                style.position_preset = position_en
+                style.font_family = 字体类型
+                style.font_size = 字体大小
+                style.font_color = font_rgb
+                style.background_color = background_rgb
+                style.background_opacity = 背景透明度 if 背景颜色 != "透明" else 0.0
+                style.background_enabled = enable_background and 背景颜色 != "透明"
+                style.font_bold = font_bold
+                style.text_alignment = text_alignment
+                style.enable_shadow = enable_shadow
+                style.enable_border = enable_border
+                style.margin_x = margin_x
+                style.line_spacing = line_spacing
+                
+                log_messages.append(f"位置: {文本位置}, 字体: {字体类型}, 大小: {字体大小}px")
+                log_messages.append(f"字体颜色: {字体颜色} {font_rgb}")
+                log_messages.append(f"背景颜色: {背景颜色} {background_rgb}")
+                log_messages.append(f"背景透明度: {背景透明度}")
+            
+            # 应用视觉效果
+            if 视觉效果 != "无效果":
+                self.apply_visual_effect(style, 视觉效果)
+                log_messages.append(f"🎨 应用视觉效果: {视觉效果}")
+                progress.log_progress("应用视觉效果", f"特效: {视觉效果}", 22.0)
             
             # 处理文本换行
             wrapped_text = self.wrap_text(文本内容, 每行字符数)
             text_stats = self.get_text_stats(wrapped_text)
             
             # 步骤1: 显示配置信息
-            progress.log_progress("初始化配置", f"文本: '{文本内容[:20]}{'...' if len(文本内容) > 20 else ''}'", 10.0)
+            progress.log_progress("初始化配置", f"文本: '{文本内容[:20]}{'...' if len(文本内容) > 20 else ''}'", 20.0)
             log_messages.append(f"开始处理文本覆盖: '{文本内容}'")
             log_messages.append(f"换行后文本: {text_stats['total_lines']}行, 最长{text_stats['max_line_length']}字符")
-            log_messages.append(f"位置: {文本位置}, 字体: {字体类型}, 大小: {字体大小}px")
             log_messages.append(f"位置计算: 按视频高度比例自适应")
-            log_messages.append(f"字体颜色: {字体颜色} {font_rgb}")
-            log_messages.append(f"背景颜色: {背景颜色} {background_rgb}")
-            log_messages.append(f"背景透明度: {背景透明度}")
-            
-            # 创建样式配置
-            style = TextOverlayStyle()
-            style.position_preset = position_en
-            style.font_family = 字体类型
-            style.font_size = 字体大小
-            style.font_color = font_rgb
-            style.background_color = background_rgb
-            style.background_opacity = 背景透明度 if 背景颜色 != "透明" else 0.0
-            style.background_enabled = enable_background and 背景颜色 != "透明"
-            style.font_bold = font_bold
-            style.text_alignment = text_alignment
-            style.enable_shadow = enable_shadow
-            style.enable_border = enable_border
-            style.margin_x = margin_x
-            style.line_spacing = line_spacing
             
             # 显示位置计算详情（用于调试）
             x_expr, y_expr = style.get_position_expression(1920, 1080)  # 使用标准分辨率计算示例
             log_messages.append(f"位置表达式: x={x_expr}, y={y_expr}")
             
             # 步骤2: 验证样式配置
-            progress.log_progress("验证样式配置", f"位置: {文本位置}, 大小: {字体大小}px", 20.0)
+            progress.log_progress("验证样式配置", f"验证样式有效性", 25.0)
             print(f"🔍 开始验证样式配置...")
             is_valid, error_msg = self.service.validate_style(style)
             if not is_valid:
@@ -556,7 +709,7 @@ class TextOverlayVideoNode:
             print(f"✅ 样式配置验证通过")
             
             # 步骤3: 准备临时文件
-            progress.log_progress("准备临时文件", "创建输入输出文件", 30.0)
+            progress.log_progress("准备临时文件", "创建输入输出文件", 35.0)
             
             # 由于ComfyUI中图像处理通常在内存中进行，
             # 这里我们需要将图像序列转换为临时视频文件进行处理
@@ -574,7 +727,7 @@ class TextOverlayVideoNode:
                 print(f"🎬 开始转换图像序列为视频...")
                 print(f"📊 输入图像数量: {len(images)}")
                 print(f"📁 临时文件路径: {temp_input_path}")
-                progress.log_progress("转换图像序列", f"临时文件: {os.path.basename(temp_input_path)}", 40.0)
+                progress.log_progress("转换图像序列", f"临时文件: {os.path.basename(temp_input_path)}", 45.0)
                 success = self._images_to_video(images, temp_input_path)
                 if not success:
                     error_message = "❌ 图像序列转换为视频失败"
@@ -584,11 +737,11 @@ class TextOverlayVideoNode:
                     return images, "\n".join(log_messages)
                 print(f"✅ 图像序列转换成功")
                 
-                progress.log_progress("图像序列转换完成", "准备添加文本覆盖", 60.0)
+                progress.log_progress("图像序列转换完成", "准备添加文本覆盖", 65.0)
                 log_messages.append("✅ 图像序列转换完成")
                 
                 # 步骤5: 添加文本覆盖
-                progress.log_progress("添加文本覆盖", f"使用FFmpeg处理", 70.0)
+                progress.log_progress("添加文本覆盖", f"使用FFmpeg处理", 75.0)
                 log_messages.append("正在添加文本覆盖...")
                 success = self.service.add_text_overlay(
                     temp_input_path, wrapped_text, temp_output_path, style
@@ -600,11 +753,11 @@ class TextOverlayVideoNode:
                     log_messages.append(error_message)
                     return images, "\n".join(log_messages)
                 
-                progress.log_progress("文本覆盖完成", "开始转换回图像序列", 85.0)
+                progress.log_progress("文本覆盖完成", "开始转换回图像序列", 90.0)
                 log_messages.append("✅ 文本覆盖添加完成")
                 
                 # 步骤6: 将处理后的视频转换回图像序列
-                progress.log_progress("转换回图像序列", f"输出文件: {os.path.basename(temp_output_path)}", 90.0)
+                progress.log_progress("转换回图像序列", f"输出文件: {os.path.basename(temp_output_path)}", 95.0)
                 log_messages.append("正在转换回图像序列...")
                 processed_images = self._video_to_images(temp_output_path)
                 

@@ -319,3 +319,278 @@ class PresetStyles:
             # 白色字体
             font_color=(255, 255, 255)
         )
+    
+    # ======= TikTok 专用预设样式 =======
+    
+    @staticmethod
+    def tiktok_classic() -> SubtitleStyle:
+        """🔥 TikTok经典：大字体白字粗黑边，中下位置显示"""
+        return SubtitleStyle(
+            # 位置：中下位置，适合竖屏观看
+            position=SubtitlePosition.BOTTOM_CENTER,
+            margin_y=25,  # 距离底部适中距离，避开TikTok UI
+            margin_x=30,  # 减少边距以适配手机屏幕
+            
+            # 字体：大字体粗体，突出显示
+            font_size=42,
+            font_weight=FontWeight.BOLD,
+            font_family="Arial Black,WenQuanYi Zen Hei",
+            
+            # 颜色：纯白字体配黑边，经典TikTok风格
+            font_color=(255, 255, 255),
+            outline_width=4,  # 粗描边确保可读性
+            outline_color=(0, 0, 0),
+            
+            # 阴影：增强立体感
+            shadow_enabled=True,
+            shadow_offset_x=3,
+            shadow_offset_y=3,
+            shadow_blur=5,
+            shadow_color=(0, 0, 0),
+            
+            # 背景：不使用背景，保持简洁
+            background_enabled=False,
+            
+            # 布局：适配手机屏幕
+            max_width_percent=85,
+            line_spacing=1.3
+        )
+    
+    @staticmethod
+    def tiktok_neon() -> SubtitleStyle:
+        """✨ TikTok霓虹：发光效果，时尚炫酷"""
+        return SubtitleStyle(
+            # 位置：居中稍下，突出显示
+            position=SubtitlePosition.CENTER,
+            margin_y=40,
+            margin_x=25,
+            
+            # 字体：中大字体，现代感
+            font_size=38,
+            font_weight=FontWeight.BOLD,
+            font_family="Arial,Roboto,WenQuanYi Zen Hei",
+            
+            # 颜色：白色字体配霓虹边框
+            font_color=(255, 255, 255),
+            outline_width=3,
+            outline_color=(255, 20, 147),  # 霓虹粉边框
+            
+            # 特殊效果：多层阴影模拟发光
+            shadow_enabled=True,
+            shadow_offset_x=0,
+            shadow_offset_y=0,
+            shadow_blur=10,
+            shadow_color=(255, 20, 147),  # 霓虹粉发光
+            
+            # 背景：半透明深色背景增强发光效果
+            background_enabled=True,
+            background_color=(20, 20, 40, 120),
+            background_padding=15,
+            
+            # 布局
+            max_width_percent=80,
+            line_spacing=1.2
+        )
+    
+    @staticmethod 
+    def tiktok_bold() -> SubtitleStyle:
+        """💪 TikTok粗体：超粗字体，震撼视觉"""
+        return SubtitleStyle(
+            # 位置：底部，霸气显示
+            position=SubtitlePosition.BOTTOM_CENTER,
+            margin_y=30,
+            margin_x=20,
+            
+            # 字体：超大粗体
+            font_size=48,
+            font_weight=FontWeight.BOLD,
+            font_family="Impact,Arial Black,WenQuanYi Zen Hei Bold",
+            
+            # 颜色：纯白配超粗黑边
+            font_color=(255, 255, 255),
+            outline_width=6,  # 超粗描边
+            outline_color=(0, 0, 0),
+            
+            # 阴影：强化立体感
+            shadow_enabled=True,
+            shadow_offset_x=4,
+            shadow_offset_y=4,
+            shadow_blur=8,
+            shadow_color=(0, 0, 0),
+            
+            # 布局：紧凑显示
+            max_width_percent=90,
+            line_spacing=1.1
+        )
+    
+    @staticmethod
+    def tiktok_colorful() -> SubtitleStyle:
+        """🌈 TikTok彩色：彩虹色彩，活力四射"""
+        return SubtitleStyle(
+            # 位置：中上位置
+            position=SubtitlePosition.CENTER,
+            margin_y=35,
+            margin_x=30,
+            
+            # 字体：活泼字体
+            font_size=40,
+            font_weight=FontWeight.BOLD,
+            font_family="Arial Rounded,Arial,WenQuanYi Zen Hei",
+            
+            # 颜色：彩虹色字体（这里用黄色代表，实际需要渐变支持）
+            font_color=(255, 215, 0),  # 金黄色
+            outline_width=3,
+            outline_color=(255, 69, 0),  # 橙红色边框
+            
+            # 阴影：彩色阴影
+            shadow_enabled=True,
+            shadow_offset_x=2,
+            shadow_offset_y=2,
+            shadow_blur=6,
+            shadow_color=(255, 105, 180),  # 粉色阴影
+            
+            # 背景：渐变背景（暂用半透明白色）
+            background_enabled=True,
+            background_color=(255, 255, 255, 80),
+            background_padding=12,
+            
+            max_width_percent=82
+        )
+    
+    @staticmethod
+    def tiktok_minimal() -> SubtitleStyle:
+        """🌟 TikTok简约：干净简洁，突出内容"""
+        return SubtitleStyle(
+            # 位置：底部简洁
+            position=SubtitlePosition.BOTTOM_CENTER,
+            margin_y=35,
+            margin_x=40,
+            
+            # 字体：简洁现代
+            font_size=36,
+            font_weight=FontWeight.BOLD,
+            font_family="Helvetica,Arial,WenQuanYi Zen Hei",
+            
+            # 颜色：纯白简洁
+            font_color=(255, 255, 255),
+            outline_width=2,  # 细描边
+            outline_color=(0, 0, 0),
+            
+            # 阴影：轻微阴影
+            shadow_enabled=True,
+            shadow_offset_x=1,
+            shadow_offset_y=1,
+            shadow_blur=3,
+            shadow_color=(0, 0, 0),
+            
+            # 背景：无背景，保持简洁
+            background_enabled=False,
+            
+            max_width_percent=75,
+            line_spacing=1.4
+        )
+    
+    @staticmethod
+    def tiktok_story() -> SubtitleStyle:
+        """📖 TikTok故事：温馨叙述，情感传达"""
+        return SubtitleStyle(
+            # 位置：中央偏下
+            position=SubtitlePosition.CENTER,
+            margin_y=25,
+            margin_x=35,
+            
+            # 字体：温暖字体
+            font_size=34,
+            font_weight=FontWeight.BOLD,
+            font_family="Georgia,Times,SimSun,WenQuanYi Zen Hei",
+            
+            # 颜色：温暖白色
+            font_color=(255, 248, 220),  # 象牙白
+            outline_width=2,
+            outline_color=(139, 69, 19),  # 棕色边框
+            
+            # 阴影：温和阴影
+            shadow_enabled=True,
+            shadow_offset_x=2,
+            shadow_offset_y=2,
+            shadow_blur=4,
+            shadow_color=(101, 67, 33),  # 深棕色阴影
+            
+            # 背景：温馨背景
+            background_enabled=True,
+            background_color=(139, 69, 19, 100),  # 半透明棕色
+            background_padding=14,
+            
+            max_width_percent=85,
+            line_spacing=1.5
+        )
+    
+    @staticmethod
+    def tiktok_dance() -> SubtitleStyle:
+        """💃 TikTok舞蹈：动感节拍，律动感强"""
+        return SubtitleStyle(
+            # 位置：顶部，避开舞蹈动作
+            position=SubtitlePosition.TOP_CENTER,
+            margin_y=25,
+            margin_x=25,
+            
+            # 字体：动感字体
+            font_size=44,
+            font_weight=FontWeight.BOLD,
+            font_family="Impact,Arial Black,WenQuanYi Zen Hei",
+            
+            # 颜色：活力色彩
+            font_color=(255, 255, 255),
+            outline_width=5,
+            outline_color=(255, 0, 128),  # 亮粉色边框
+            
+            # 阴影：强烈阴影
+            shadow_enabled=True,
+            shadow_offset_x=3,
+            shadow_offset_y=3,
+            shadow_blur=7,
+            shadow_color=(255, 0, 128),
+            
+            # 背景：动感背景
+            background_enabled=True,
+            background_color=(0, 0, 0, 150),
+            background_padding=10,
+            
+            max_width_percent=80,
+            line_spacing=1.2
+        )
+    
+    @staticmethod
+    def tiktok_luxury() -> SubtitleStyle:
+        """💎 TikTok奢华：金色质感，高端大气"""
+        return SubtitleStyle(
+            # 位置：居中显示
+            position=SubtitlePosition.CENTER,
+            margin_y=30,
+            margin_x=40,
+            
+            # 字体：优雅字体
+            font_size=38,
+            font_weight=FontWeight.BOLD,
+            font_family="Times New Roman,Georgia,SimSun",
+            
+            # 颜色：金色奢华
+            font_color=(255, 215, 0),  # 金色
+            outline_width=3,
+            outline_color=(184, 134, 11),  # 深金色边框
+            
+            # 阴影：奢华阴影
+            shadow_enabled=True,
+            shadow_offset_x=2,
+            shadow_offset_y=2,
+            shadow_blur=8,
+            shadow_color=(139, 69, 19),  # 深棕色阴影
+            
+            # 背景：高端背景
+            background_enabled=True,
+            background_color=(0, 0, 0, 180),  # 深色背景
+            background_padding=16,
+            
+            max_width_percent=78,
+            line_spacing=1.3
+        )
